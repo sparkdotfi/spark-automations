@@ -83,17 +83,11 @@ In `hardhat.config.ts`, you can set up configurations for your Web3 Function run
 -   Example:
 
 ```typescript
-import {
-    Web3Function,
-    Web3FunctionContext,
-} from '@gelatonetwork/web3-functions-sdk'
+import { Web3Function, Web3FunctionContext } from '@gelatonetwork/web3-functions-sdk'
 import { Contract } from '@ethersproject/contracts'
 import ky from 'ky' // we recommend using ky as axios doesn't support fetch by default
 
-const ORACLE_ABI = [
-    'function lastUpdated() external view returns(uint256)',
-    'function updatePrice(uint256)',
-]
+const ORACLE_ABI = ['function lastUpdated() external view returns(uint256)', 'function updatePrice(uint256)']
 
 Web3Function.onRun(async (context: Web3FunctionContext) => {
     const { userArgs, gelatoArgs, multiChainProvider } = context
@@ -117,10 +111,10 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
     // Get current price on coingecko
     const currency = 'ethereum'
     const priceData: any = await ky
-        .get(
-            `https://api.coingecko.com/api/v3/simple/price?ids=${currency}&vs_currencies=usd`,
-            { timeout: 5_000, retry: 0 },
-        )
+        .get(`https://api.coingecko.com/api/v3/simple/price?ids=${currency}&vs_currencies=usd`, {
+            timeout: 5_000,
+            retry: 0,
+        })
         .json()
     price = Math.floor(priceData[currency].usd)
     console.log(`Updating price: ${price}`)
@@ -131,9 +125,7 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
         callData: [
             {
                 to: oracleAddress,
-                data: oracle.interface.encodeFunctionData('updatePrice', [
-                    price,
-                ]),
+                data: oracle.interface.encodeFunctionData('updatePrice', [price]),
             },
         ],
     }
@@ -289,10 +281,7 @@ If you need to manage some state variable, we provide a simple key/value store t
 See the below example to read & update values from your storage:
 
 ```typescript
-import {
-    Web3Function,
-    Web3FunctionContext,
-} from '@gelatonetwork/web3-functions-sdk'
+import { Web3Function, Web3FunctionContext } from '@gelatonetwork/web3-functions-sdk'
 
 Web3Function.onRun(async (context: Web3FunctionContext) => {
     const { storage, multiChainProvider } = context
@@ -341,8 +330,7 @@ COINGECKO_API=https://api.coingecko.com/api/v3
 ```typescript
 // Get api from secrets
 const coingeckoApi = await context.secrets.get('COINGECKO_API')
-if (!coingeckoApi)
-    return { canExec: false, message: `COINGECKO_API not set in secrets` }
+if (!coingeckoApi) return { canExec: false, message: `COINGECKO_API not set in secrets` }
 ```
 
 3. Test your Web3 Function using secrets:<br/>

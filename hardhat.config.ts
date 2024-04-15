@@ -32,7 +32,7 @@ const config: HardhatUserConfig = {
     w3f: {
         rootDir: './web3-functions',
         debug: false,
-        networks: ['ethereum', 'sepolia', 'polygon', 'hardhat', 'mumbai'], //(multiChainProvider) injects provider for these networks
+        networks: ['hardhat', 'ethereum', 'sepolia', 'polygon', 'mumbai'], //(multiChainProvider) injects provider for these networks
     },
 
     namedAccounts: {
@@ -45,12 +45,15 @@ const config: HardhatUserConfig = {
 
     networks: {
         hardhat: {
-            chainId: 31337,
             forking: {
-                url: `https://polygon-mumbai.g.alchemy.com/v2/${ALCHEMY_ID}`,
-                blockNumber: 43781363,
+                url: `https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_ID}`,
+                blockNumber: 19660800,
             },
         },
+        // localhost: {
+        //   url: 'http://localhost:8545',
+        //   chainId: 31337,
+        // },
 
         // Prod
         avalanche: {
@@ -148,8 +151,7 @@ const config: HardhatUserConfig = {
             url: 'https://mainnet.era.zksync.io',
             chainId: 324,
             accounts: PRIVATE_KEY ? [PRIVATE_KEY] : [],
-            verifyURL:
-                'https://zksync2-mainnet-explorer.zksync.io/contract_verification',
+            verifyURL: 'https://zksync2-mainnet-explorer.zksync.io/contract_verification',
         },
 
         // Staging

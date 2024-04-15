@@ -18,7 +18,8 @@
     "test": "npx hardhat test",
     "verify": "npx hardhat etherscan-verify",
     "create-task:adboard": "npx hardhat run ./scripts/create-task-adboard.ts",
-    "create-task:oracle": "npx hardhat run ./scripts/create-task-oracle.ts"
+    "create-task:oracle": "npx hardhat run ./scripts/create-task-oracle.ts",
+    "w3f:test": "npx w3f test web3-functions/simple/index.ts --logs --chain-id=88153591557"
   },
   "license": "ISC",
   "devDependencies": {
@@ -67,7 +68,7 @@
   },
   "dependencies": {
     "@gelatonetwork/automate-sdk": "^3.0.2",
-    "@gelatonetwork/web3-functions-sdk": "2.3.0",
+    "@gelatonetwork/web3-functions-sdk": "^2.3.0",
     "ky": "^0.33.2"
   }
 }
