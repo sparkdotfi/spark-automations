@@ -79,8 +79,10 @@ describe('CapAutomator', function () {
 
     it('one supply cap update is required (90% threshold)', async () => {
         const { gap } = await capAutomator.supplyCapConfigs(wbtc)
+
+        // full tokens * WBTC decimals * 20%
         const amountInFullTokens = BigInt(gap) / BigInt(5)
-        const amount = amountInFullTokens * BigInt(10**8)  // full tokens * WBTC decimals * 20%
+        const amount = amountInFullTokens * BigInt(10**8)
 
         await deposit(wbtcWhale, wbtc, amount)
 
