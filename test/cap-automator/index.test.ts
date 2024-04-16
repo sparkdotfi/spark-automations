@@ -42,7 +42,8 @@ describe('CapAutomator', function () {
         await pool.supply(tokenAddress, amount, signerAddress, 0)
     }
 
-    const formatExecSupplyCallData = (assetAddress: string) => `0xb00d4b1c000000000000000000000000${assetAddress.slice(2).toLocaleLowerCase()}`
+    const formatExecSupplyCallData = (assetAddress: string) =>
+        `0xb00d4b1c000000000000000000000000${assetAddress.slice(2).toLocaleLowerCase()}`
 
     before(async () => {
         ;[reader, keeper] = await ethers.getSigners()
@@ -57,7 +58,7 @@ describe('CapAutomator', function () {
             await capAutomator.exec(assetAddress)
         }
 
-        await mine(2, {interval: 24 * 60 * 60 })
+        await mine(2, { interval: 24 * 60 * 60 })
 
         capAutomatorW3F = w3f.get('cap-automator')
     })
@@ -77,36 +78,73 @@ describe('CapAutomator', function () {
         !result.canExec && expect(result.message).to.equal('No cap automator calls to be executed')
     })
 
-    it('one supply cap update is required (90% threshold)', async () => {
-        const { gap } = await capAutomator.supplyCapConfigs(wbtc)
+    describe('execSupply', () => {
+        const testedThresholds = [3000, 4000, 5000, 6000, 7000, 8000, 9000]
 
-        // full tokens * WBTC decimals * 20%
-        const amountInFullTokens = BigInt(gap) / BigInt(5)
-        const amount = amountInFullTokens * BigInt(10**8)
+        testedThresholds.forEach((threshold) => {
+            describe(`${threshold / 100}% threshold`, () => {
+                it(`actual gap is smaller than optimal but the threshold is not met`, async () => {
+                    const { gap } = await capAutomator.supplyCapConfigs(wbtc)
 
-        await deposit(wbtcWhale, wbtc, amount)
+                    const percentageOfTheGapNeededForTrigger = (10000 - threshold) / 100 + 1
 
-        // update for each gap that is smaller than 90% of the desired gap
-        const { result } = await capAutomatorW3F.run('onRun', { userArgs: { threshold: 9000 } })
+                    // full tokens * WBTC decimals * percentage of the gap
+                    const amountInFullTokens = (BigInt(gap) * BigInt(percentageOfTheGapNeededForTrigger)) / BigInt(100)
 
-        expect(result.canExec).to.equal(true)
-        if (!result.canExec) {throw ''}
+                    // depositing only 1/4 of the full amount
+                    await deposit(wbtcWhale, wbtc, (amountInFullTokens * BigInt(10 ** 8)) / BigInt(4))
 
-        const callData = result.callData as Web3FunctionResultCallData[]
+                    const { result: negativeResult } = await capAutomatorW3F.run('onRun', { userArgs: { threshold } })
 
-        expect(callData.length).to.equal(1)
-        expect(callData[0].to).to.equal(addresses.mainnet.capAutomator)
-        expect(callData[0].data).to.equal(formatExecSupplyCallData(wbtc))
+                    expect(negativeResult.canExec).to.equal(false)
+                    !negativeResult.canExec &&
+                        expect(negativeResult.message).to.equal('No cap automator calls to be executed')
+                })
 
-        const supplyCapBefore = BigInt((await protocolDataProvider.getReserveCaps(wbtc)).supplyCap)
+                it(`one supply cap update is required`, async () => {
+                    const { gap } = await capAutomator.supplyCapConfigs(wbtc)
 
-        await keeper.sendTransaction({
-            to: callData[0].to,
-            data: callData[0].data,
+                    const percentageOfTheGapNeededForTrigger = (10000 - threshold) / 100 + 1
+
+                    // full tokens * WBTC decimals * percentage of the gap
+                    const amountInFullTokens = (BigInt(gap) * BigInt(percentageOfTheGapNeededForTrigger)) / BigInt(100)
+
+                    // depositing only 1/4 of the full deposit amount
+                    await deposit(wbtcWhale, wbtc, (amountInFullTokens * BigInt(10 ** 8)) / BigInt(4))
+
+                    const { result: negativeResult } = await capAutomatorW3F.run('onRun', { userArgs: { threshold } })
+
+                    expect(negativeResult.canExec).to.equal(false)
+
+                    // depositing remaining of the full deposit amount
+                    await deposit(wbtcWhale, wbtc, (amountInFullTokens * BigInt(10 ** 8) * BigInt(3)) / BigInt(4))
+
+                    // update for each gap that is smaller than 90% of the desired gap
+                    const { result: positiveResult } = await capAutomatorW3F.run('onRun', { userArgs: { threshold } })
+
+                    expect(positiveResult.canExec).to.equal(true)
+                    if (!positiveResult.canExec) {
+                        throw ''
+                    }
+
+                    const callData = positiveResult.callData as Web3FunctionResultCallData[]
+
+                    expect(callData.length).to.equal(1)
+                    expect(callData[0].to).to.equal(addresses.mainnet.capAutomator)
+                    expect(callData[0].data).to.equal(formatExecSupplyCallData(wbtc))
+
+                    const supplyCapBefore = BigInt((await protocolDataProvider.getReserveCaps(wbtc)).supplyCap)
+
+                    await keeper.sendTransaction({
+                        to: callData[0].to,
+                        data: callData[0].data,
+                    })
+
+                    const supplyCapAfter = BigInt((await protocolDataProvider.getReserveCaps(wbtc)).supplyCap)
+
+                    expect(supplyCapAfter).to.equal(supplyCapBefore + amountInFullTokens)
+                })
+            })
         })
-
-        const supplyCapAfter = BigInt((await protocolDataProvider.getReserveCaps(wbtc)).supplyCap)
-
-        expect(supplyCapAfter).to.equal(supplyCapBefore + amountInFullTokens)
     })
 })
