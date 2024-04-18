@@ -1,7 +1,7 @@
 import { Contract } from '@ethersproject/contracts'
 import { Web3Function, Web3FunctionContext } from '@gelatonetwork/web3-functions-sdk'
 
-import { capAutomatorAbi, erc20Abi, poolAbi, protocolDataProviderAbi } from '../../abis'
+import { capAutomatorAbi, multicallAbi, poolAbi, protocolDataProviderAbi } from '../../abis'
 import { addresses } from '../../utils'
 
 Web3Function.onRun(async (context: Web3FunctionContext) => {
@@ -12,6 +12,7 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
     const pool = new Contract(addresses.mainnet.pool, poolAbi, provider)
     const protocolDataProvider = new Contract(addresses.mainnet.protocolDataProvider, protocolDataProviderAbi, provider)
     const capAutomator = new Contract(addresses.mainnet.capAutomator, capAutomatorAbi, provider)
+    const multicall = new Contract(addresses.mainnet.multicall, multicallAbi, provider)
 
     const sparkAssets = (await pool.getReservesList()) as string[]
 
@@ -19,35 +20,50 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
     const supplyCapUpdates = {} as Record<string, boolean>
 
     for (const assetAddress of sparkAssets) {
-        const asset = new Contract(assetAddress, erc20Abi, provider)
-        const decimals = (await asset.decimals()) as number
+        const multiResult = await multicall.callStatic.aggregate(
+            [
+                {
+                    target: addresses.mainnet.protocolDataProvider,
+                    callData: protocolDataProvider.interface.encodeFunctionData('getReserveCaps', [assetAddress]),
+                },
+                {
+                    target: addresses.mainnet.capAutomator,
+                    callData: capAutomator.interface.encodeFunctionData('exec', [assetAddress]),
+                },
+                {
+                    target: addresses.mainnet.capAutomator,
+                    callData: capAutomator.interface.encodeFunctionData('borrowCapConfigs', [assetAddress]),
+                },
+                {
+                    target: addresses.mainnet.capAutomator,
+                    callData: capAutomator.interface.encodeFunctionData('supplyCapConfigs', [assetAddress]),
+                },
+            ]
+        )
 
-        const reserveCaps = await protocolDataProvider.getReserveCaps(assetAddress)
+        const reserveCaps = protocolDataProvider.interface.decodeFunctionResult('getReserveCaps', multiResult.returnData[0])
+        const execResult = capAutomator.interface.decodeFunctionResult('exec', multiResult.returnData[1])
+        const borrowCapConfig = capAutomator.interface.decodeFunctionResult('borrowCapConfigs', multiResult.returnData[2])
+        const supplyCapConfig = capAutomator.interface.decodeFunctionResult('supplyCapConfigs', multiResult.returnData[3])
 
-        const borrowGap = BigInt((await capAutomator.borrowCapConfigs(assetAddress)).gap)
+        const borrowGap = BigInt(borrowCapConfig.gap)
+        const supplyGap = BigInt(supplyCapConfig.gap)
 
-        if (borrowGap) {
-            const borrowCap = BigInt(reserveCaps.borrowCap)
-            const currentBorrow = BigInt(await protocolDataProvider.getTotalDebt(assetAddress)) / BigInt(10 ** decimals)
-            const currentBorrowGap = borrowCap - currentBorrow
+        const proposedBorrowCap = execResult.newBorrowCap
+        const currentBorrowCap = reserveCaps.borrowCap
+        const proposedBorrowCapChange = proposedBorrowCap.gt(currentBorrowCap)
+            ? proposedBorrowCap.sub(currentBorrowCap)
+            : currentBorrowCap.sub(proposedBorrowCap)
 
-            borrowCapUpdates[assetAddress] = currentBorrowGap < (borrowGap * threshold) / BigInt(10000)
-        } else {
-            borrowCapUpdates[assetAddress] = false
-        }
+        const proposedSupplyCap = execResult.newSupplyCap
+        const currentSupplyCap = reserveCaps.supplyCap
+        const proposedSupplyCapChange = proposedSupplyCap.gt(currentSupplyCap)
+            ? proposedSupplyCap.sub(currentSupplyCap)
+            : currentSupplyCap.sub(proposedSupplyCap)
 
-        const supplyGap = BigInt((await capAutomator.supplyCapConfigs(assetAddress)).gap)
+        borrowCapUpdates[assetAddress] = proposedBorrowCapChange.gt(borrowGap * (BigInt(10_000) - threshold) / BigInt(10_000))
+        supplyCapUpdates[assetAddress] = proposedSupplyCapChange.gt(supplyGap * (BigInt(10_000) - threshold) / BigInt(10_000))
 
-        if (supplyGap) {
-            const supplyCap = BigInt(reserveCaps.supplyCap)
-            const currentSupply =
-                BigInt(await protocolDataProvider.getATokenTotalSupply(assetAddress)) / BigInt(10 ** decimals)
-            const currentSupplyGap = supplyCap - currentSupply
-
-            supplyCapUpdates[assetAddress] = currentSupplyGap < (supplyGap * threshold) / BigInt(10000)
-        } else {
-            supplyCapUpdates[assetAddress] = false
-        }
     }
 
     const execBorrow = []
