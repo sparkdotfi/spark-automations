@@ -8,7 +8,6 @@ import { Contract } from '@ethersproject/contracts'
 import { capAutomatorAbi, erc20Abi, poolAbi, protocolDataProviderAbi } from '../../abis'
 import { addresses } from '../../utils'
 import { Web3FunctionResultCallData } from '@gelatonetwork/web3-functions-sdk/*'
-import { threadId } from 'worker_threads'
 
 const { w3f, ethers } = hre
 
