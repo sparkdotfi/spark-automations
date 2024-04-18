@@ -4,6 +4,11 @@ import { Web3Function, Web3FunctionContext } from '@gelatonetwork/web3-functions
 import { capAutomatorAbi, multicallAbi, poolAbi, protocolDataProviderAbi } from '../../abis'
 import { addresses } from '../../utils'
 
+type MulticallCall = {
+    target: string,
+    callData: string,
+}
+
 Web3Function.onRun(async (context: Web3FunctionContext) => {
     const { multiChainProvider, userArgs } = context
     const provider = multiChainProvider.default()
@@ -19,32 +24,37 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
     const borrowCapUpdates = {} as Record<string, boolean>
     const supplyCapUpdates = {} as Record<string, boolean>
 
-    for (const assetAddress of sparkAssets) {
-        const multiResult = await multicall.callStatic.aggregate(
-            [
-                {
-                    target: addresses.mainnet.protocolDataProvider,
-                    callData: protocolDataProvider.interface.encodeFunctionData('getReserveCaps', [assetAddress]),
-                },
-                {
-                    target: addresses.mainnet.capAutomator,
-                    callData: capAutomator.interface.encodeFunctionData('exec', [assetAddress]),
-                },
-                {
-                    target: addresses.mainnet.capAutomator,
-                    callData: capAutomator.interface.encodeFunctionData('borrowCapConfigs', [assetAddress]),
-                },
-                {
-                    target: addresses.mainnet.capAutomator,
-                    callData: capAutomator.interface.encodeFunctionData('supplyCapConfigs', [assetAddress]),
-                },
-            ]
-        )
+    let multicallCalls: Array<MulticallCall> = []
 
-        const reserveCaps = protocolDataProvider.interface.decodeFunctionResult('getReserveCaps', multiResult.returnData[0])
-        const execResult = capAutomator.interface.decodeFunctionResult('exec', multiResult.returnData[1])
-        const borrowCapConfig = capAutomator.interface.decodeFunctionResult('borrowCapConfigs', multiResult.returnData[2])
-        const supplyCapConfig = capAutomator.interface.decodeFunctionResult('supplyCapConfigs', multiResult.returnData[3])
+    for (const assetAddress of sparkAssets) {
+        multicallCalls = [...multicallCalls, ...[
+            {
+                target: addresses.mainnet.protocolDataProvider,
+                callData: protocolDataProvider.interface.encodeFunctionData('getReserveCaps', [assetAddress]),
+            },
+            {
+                target: addresses.mainnet.capAutomator,
+                callData: capAutomator.interface.encodeFunctionData('borrowCapConfigs', [assetAddress]),
+            },
+            {
+                target: addresses.mainnet.capAutomator,
+                callData: capAutomator.interface.encodeFunctionData('supplyCapConfigs', [assetAddress]),
+            },
+            {
+                target: addresses.mainnet.capAutomator,
+                callData: capAutomator.interface.encodeFunctionData('exec', [assetAddress]),
+            },
+        ]]
+    }
+    let multicallResults = (await multicall.callStatic.aggregate(multicallCalls)).returnData
+
+    for (const assetAddress of sparkAssets) {
+        const reserveCaps = protocolDataProvider.interface.decodeFunctionResult('getReserveCaps', multicallResults[0])
+        const borrowCapConfig = capAutomator.interface.decodeFunctionResult('borrowCapConfigs', multicallResults[1])
+        const supplyCapConfig = capAutomator.interface.decodeFunctionResult('supplyCapConfigs', multicallResults[2])
+        const execResult = capAutomator.interface.decodeFunctionResult('exec', multicallResults[3])
+
+        multicallResults = multicallResults.slice(4)
 
         const borrowGap = BigInt(borrowCapConfig.gap)
         const supplyGap = BigInt(supplyCapConfig.gap)
