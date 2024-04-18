@@ -19,35 +19,42 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
     const borrowCapUpdates = {} as Record<string, boolean>
     const supplyCapUpdates = {} as Record<string, boolean>
 
-    let multicallCalls: Array<{target: string, callData: string}> = []
+    let multicallCalls: Array<{ target: string; callData: string }> = []
 
     for (const assetAddress of sparkAssets) {
-        multicallCalls = [...multicallCalls, ...[
-            {
-                target: addresses.mainnet.protocolDataProvider,
-                callData: protocolDataProvider.interface.encodeFunctionData('getReserveCaps', [assetAddress]),
-            },
-            {
-                target: addresses.mainnet.capAutomator,
-                callData: capAutomator.interface.encodeFunctionData('borrowCapConfigs', [assetAddress]),
-            },
-            {
-                target: addresses.mainnet.capAutomator,
-                callData: capAutomator.interface.encodeFunctionData('supplyCapConfigs', [assetAddress]),
-            },
-            {
-                target: addresses.mainnet.capAutomator,
-                callData: capAutomator.interface.encodeFunctionData('exec', [assetAddress]),
-            },
-        ]]
+        multicallCalls = [
+            ...multicallCalls,
+            ...[
+                {
+                    target: addresses.mainnet.protocolDataProvider,
+                    callData: protocolDataProvider.interface.encodeFunctionData('getReserveCaps', [assetAddress]),
+                },
+                {
+                    target: addresses.mainnet.capAutomator,
+                    callData: capAutomator.interface.encodeFunctionData('borrowCapConfigs', [assetAddress]),
+                },
+                {
+                    target: addresses.mainnet.capAutomator,
+                    callData: capAutomator.interface.encodeFunctionData('supplyCapConfigs', [assetAddress]),
+                },
+                {
+                    target: addresses.mainnet.capAutomator,
+                    callData: capAutomator.interface.encodeFunctionData('exec', [assetAddress]),
+                },
+            ],
+        ]
     }
 
     let multicallResults = (await multicall.callStatic.aggregate(multicallCalls)).returnData
 
     for (const assetAddress of sparkAssets) {
         const reserveCaps = protocolDataProvider.interface.decodeFunctionResult('getReserveCaps', multicallResults[0])
-        const borrowGap = BigInt(capAutomator.interface.decodeFunctionResult('borrowCapConfigs', multicallResults[1]).gap)
-        const supplyGap = BigInt(capAutomator.interface.decodeFunctionResult('supplyCapConfigs', multicallResults[2]).gap)
+        const borrowGap = BigInt(
+            capAutomator.interface.decodeFunctionResult('borrowCapConfigs', multicallResults[1]).gap,
+        )
+        const supplyGap = BigInt(
+            capAutomator.interface.decodeFunctionResult('supplyCapConfigs', multicallResults[2]).gap,
+        )
         const execResult = capAutomator.interface.decodeFunctionResult('exec', multicallResults[3])
 
         multicallResults = multicallResults.slice(4)
@@ -60,9 +67,12 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
             ? execResult.newSupplyCap.sub(reserveCaps.supplyCap)
             : reserveCaps.supplyCap.sub(execResult.newSupplyCap)
 
-        borrowCapUpdates[assetAddress] = proposedBorrowCapChange.gt(borrowGap * (BigInt(10_000) - threshold) / BigInt(10_000))
-        supplyCapUpdates[assetAddress] = proposedSupplyCapChange.gt(supplyGap * (BigInt(10_000) - threshold) / BigInt(10_000))
-
+        borrowCapUpdates[assetAddress] = proposedBorrowCapChange.gt(
+            (borrowGap * (BigInt(10_000) - threshold)) / BigInt(10_000),
+        )
+        supplyCapUpdates[assetAddress] = proposedSupplyCapChange.gt(
+            (supplyGap * (BigInt(10_000) - threshold)) / BigInt(10_000),
+        )
     }
 
     const calls: Array<string> = []
