@@ -4,11 +4,6 @@ import { Web3Function, Web3FunctionContext } from '@gelatonetwork/web3-functions
 import { capAutomatorAbi, multicallAbi, poolAbi, protocolDataProviderAbi } from '../../abis'
 import { addresses } from '../../utils'
 
-type MulticallCall = {
-    target: string,
-    callData: string,
-}
-
 Web3Function.onRun(async (context: Web3FunctionContext) => {
     const { multiChainProvider, userArgs } = context
     const provider = multiChainProvider.default()
@@ -24,7 +19,7 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
     const borrowCapUpdates = {} as Record<string, boolean>
     const supplyCapUpdates = {} as Record<string, boolean>
 
-    let multicallCalls: Array<MulticallCall> = []
+    let multicallCalls: Array<{target: string, callData: string}> = []
 
     for (const assetAddress of sparkAssets) {
         multicallCalls = [...multicallCalls, ...[
@@ -46,55 +41,41 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
             },
         ]]
     }
+
     let multicallResults = (await multicall.callStatic.aggregate(multicallCalls)).returnData
 
     for (const assetAddress of sparkAssets) {
         const reserveCaps = protocolDataProvider.interface.decodeFunctionResult('getReserveCaps', multicallResults[0])
-        const borrowCapConfig = capAutomator.interface.decodeFunctionResult('borrowCapConfigs', multicallResults[1])
-        const supplyCapConfig = capAutomator.interface.decodeFunctionResult('supplyCapConfigs', multicallResults[2])
+        const borrowGap = BigInt(capAutomator.interface.decodeFunctionResult('borrowCapConfigs', multicallResults[1]).gap)
+        const supplyGap = BigInt(capAutomator.interface.decodeFunctionResult('supplyCapConfigs', multicallResults[2]).gap)
         const execResult = capAutomator.interface.decodeFunctionResult('exec', multicallResults[3])
 
         multicallResults = multicallResults.slice(4)
 
-        const borrowGap = BigInt(borrowCapConfig.gap)
-        const supplyGap = BigInt(supplyCapConfig.gap)
+        const proposedBorrowCapChange = execResult.newBorrowCap.gt(reserveCaps.borrowCap)
+            ? execResult.newBorrowCap.sub(reserveCaps.borrowCap)
+            : reserveCaps.borrowCap.sub(execResult.newBorrowCap)
 
-        const proposedBorrowCap = execResult.newBorrowCap
-        const currentBorrowCap = reserveCaps.borrowCap
-        const proposedBorrowCapChange = proposedBorrowCap.gt(currentBorrowCap)
-            ? proposedBorrowCap.sub(currentBorrowCap)
-            : currentBorrowCap.sub(proposedBorrowCap)
-
-        const proposedSupplyCap = execResult.newSupplyCap
-        const currentSupplyCap = reserveCaps.supplyCap
-        const proposedSupplyCapChange = proposedSupplyCap.gt(currentSupplyCap)
-            ? proposedSupplyCap.sub(currentSupplyCap)
-            : currentSupplyCap.sub(proposedSupplyCap)
+        const proposedSupplyCapChange = execResult.newSupplyCap.gt(reserveCaps.supplyCap)
+            ? execResult.newSupplyCap.sub(reserveCaps.supplyCap)
+            : reserveCaps.supplyCap.sub(execResult.newSupplyCap)
 
         borrowCapUpdates[assetAddress] = proposedBorrowCapChange.gt(borrowGap * (BigInt(10_000) - threshold) / BigInt(10_000))
         supplyCapUpdates[assetAddress] = proposedSupplyCapChange.gt(supplyGap * (BigInt(10_000) - threshold) / BigInt(10_000))
 
     }
 
-    const execBorrow = []
-    const execSupply = []
-    const exec = []
+    const calls: Array<string> = []
 
     for (const assetAddress of sparkAssets) {
         if (borrowCapUpdates[assetAddress] && supplyCapUpdates[assetAddress]) {
-            exec.push(assetAddress)
+            calls.push(capAutomator.interface.encodeFunctionData('exec', [assetAddress]))
         } else if (borrowCapUpdates[assetAddress]) {
-            execBorrow.push(assetAddress)
+            calls.push(capAutomator.interface.encodeFunctionData('execBorrow', [assetAddress]))
         } else if (supplyCapUpdates[assetAddress]) {
-            execSupply.push(assetAddress)
+            calls.push(capAutomator.interface.encodeFunctionData('execSupply', [assetAddress]))
         }
     }
-
-    const calls = [
-        ...execBorrow.map((assetAddress) => capAutomator.interface.encodeFunctionData('execBorrow', [assetAddress])),
-        ...execSupply.map((assetAddress) => capAutomator.interface.encodeFunctionData('execSupply', [assetAddress])),
-        ...exec.map((assetAddress) => capAutomator.interface.encodeFunctionData('exec', [assetAddress])),
-    ]
 
     if (calls.length == 0) {
         return {
