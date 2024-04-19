@@ -26,9 +26,11 @@ describe('CapAutomator', function () {
 
     let sparkAssets: string[]
 
-    const wbtc = '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599' as const
-    const wsteth = '0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0' as const
-    const weth = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2' as const
+    const {
+        wbtc,
+        weth,
+        wsteth,
+    } = addresses.mainnet
 
     const wbtcWhale = '0xb20Fb60E27a1Be799b5e04159eC2024CC3734eD7' as const
     const wstethWhale = '0x5fEC2f34D80ED82370F733043B6A536d7e9D7f8d' as const
