@@ -469,7 +469,7 @@ describe('CapAutomator', function () {
                     expect(wbtcBorrowCapAfter).to.equal(wbtcBorrowCapBefore + wbtcBorrowAmountInFullTokens)
                 })
 
-                it.only('all types of operations are required', async () => {
+                it('all types of operations are required', async () => {
                     const percentageOfTheGapNeededForTrigger = (10000 - threshold) / 100 + 1
 
                     const { gap: wstethSupplyGap } = await capAutomator.supplyCapConfigs(wsteth)
