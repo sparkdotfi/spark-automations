@@ -113,7 +113,7 @@ describe('CapAutomator', function () {
                     // depositing only 1/4 of the full amount
                     await deposit(wbtcWhale, wbtc, amountInFullTokens * BigInt(10 ** 8))
 
-                    const { result } = await capAutomatorW3F.run('onRun', { userArgs })
+                    const { result } = await capAutomatorW3F.run('onRun', { userArgs: {...userArgs, threshold} })
 
                     expect(result.canExec).to.equal(false)
                     !result.canExec && expect(result.message).to.equal('No cap automator calls to be executed')
@@ -130,14 +130,14 @@ describe('CapAutomator', function () {
                     // depositing only 1/4 of the full deposit amount
                     await deposit(wbtcWhale, wbtc, (amountInFullTokens * BigInt(10 ** 8)) / BigInt(4))
 
-                    const { result: negativeResult } = await capAutomatorW3F.run('onRun', { userArgs })
+                    const { result: negativeResult } = await capAutomatorW3F.run('onRun', { userArgs: {...userArgs, threshold} })
 
                     expect(negativeResult.canExec).to.equal(false)
 
                     // depositing remaining of the full deposit amount
                     await deposit(wbtcWhale, wbtc, (amountInFullTokens * BigInt(10 ** 8) * BigInt(3)) / BigInt(4))
 
-                    const { result: positiveResult } = await capAutomatorW3F.run('onRun', { userArgs })
+                    const { result: positiveResult } = await capAutomatorW3F.run('onRun', { userArgs: {...userArgs, threshold} })
 
                     expect(positiveResult.canExec).to.equal(true)
                     if (!positiveResult.canExec) {
@@ -177,7 +177,7 @@ describe('CapAutomator', function () {
                     await deposit(wstethWhale, wsteth, wstethAmountInFullTokens * BigInt(10 ** 18))
                     await deposit(wbtcWhale, wbtc, wbtcAmountInFullTokens * BigInt(10 ** 8))
 
-                    const { result } = await capAutomatorW3F.run('onRun', { userArgs })
+                    const { result } = await capAutomatorW3F.run('onRun', { userArgs: {...userArgs, threshold} })
 
                     expect(result.canExec).to.equal(true)
                     if (!result.canExec) {
@@ -241,7 +241,7 @@ describe('CapAutomator', function () {
                     // borrowing only 1/4 of the full amount
                     await borrow(wbtcWhale, wsteth, (amountInFullTokens * BigInt(10 ** 8)) / BigInt(4))
 
-                    const { result } = await capAutomatorW3F.run('onRun', { userArgs })
+                    const { result } = await capAutomatorW3F.run('onRun', { userArgs: {...userArgs, threshold} })
 
                     expect(result.canExec).to.equal(false)
                     !result.canExec && expect(result.message).to.equal('No cap automator calls to be executed')
@@ -257,14 +257,14 @@ describe('CapAutomator', function () {
                     // borrowing only 1/4 of the full borrow amount
                     await borrow(wbtcWhale, wsteth, (amountInFullTokens * BigInt(10 ** 18)) / BigInt(4))
 
-                    const { result: negativeResult } = await capAutomatorW3F.run('onRun', { userArgs })
+                    const { result: negativeResult } = await capAutomatorW3F.run('onRun', { userArgs: {...userArgs, threshold} })
 
                     expect(negativeResult.canExec).to.equal(false)
 
                     // borrowing remaining of the full deposit amount
                     await borrow(wbtcWhale, wsteth, (amountInFullTokens * BigInt(10 ** 18) * BigInt(3)) / BigInt(4))
 
-                    const { result: positiveResult } = await capAutomatorW3F.run('onRun', { userArgs })
+                    const { result: positiveResult } = await capAutomatorW3F.run('onRun', { userArgs: {...userArgs, threshold} })
 
                     expect(positiveResult.canExec).to.equal(true)
                     if (!positiveResult.canExec) {
@@ -304,7 +304,7 @@ describe('CapAutomator', function () {
                     await borrow(wstethWhale, weth, wethAmountInFullTokens * BigInt(10 ** 18))
                     await borrow(wbtcWhale, wsteth, wstethAmountInFullTokens * BigInt(10 ** 18))
 
-                    const { result } = await capAutomatorW3F.run('onRun', { userArgs })
+                    const { result } = await capAutomatorW3F.run('onRun', { userArgs: {...userArgs, threshold} })
 
                     expect(result.canExec).to.equal(true)
                     if (!result.canExec) {
@@ -373,7 +373,7 @@ describe('CapAutomator', function () {
                     await deposit(wstethWhale, wsteth, supplyAmountInFullTokens * BigInt(10 ** 18))
                     await borrow(wbtcWhale, wsteth, borrowAmountInFullTokens * BigInt(10 ** 18))
 
-                    const { result: positiveResult } = await capAutomatorW3F.run('onRun', { userArgs })
+                    const { result: positiveResult } = await capAutomatorW3F.run('onRun', { userArgs: {...userArgs, threshold} })
 
                     expect(positiveResult.canExec).to.equal(true)
                     if (!positiveResult.canExec) {
@@ -427,7 +427,7 @@ describe('CapAutomator', function () {
                     await borrow(wbtcWhale, wsteth, wstethBorrowAmountInFullTokens * BigInt(10 ** 18))
                     await borrow(wstethWhale, wbtc, wbtcBorrowAmountInFullTokens * BigInt(10 ** 8))
 
-                    const { result: positiveResult } = await capAutomatorW3F.run('onRun', { userArgs })
+                    const { result: positiveResult } = await capAutomatorW3F.run('onRun', { userArgs: {...userArgs, threshold} })
 
                     expect(positiveResult.canExec).to.equal(true)
                     if (!positiveResult.canExec) {
@@ -498,7 +498,7 @@ describe('CapAutomator', function () {
                     await borrow(wbtcWhale, wsteth, wstethBorrowAmountInFullTokens * BigInt(10 ** 18))
                     await borrow(wstethWhale, weth, wethBorrowAmountInFullTokens * BigInt(10 ** 18))
 
-                    const { result: positiveResult } = await capAutomatorW3F.run('onRun', { userArgs })
+                    const { result: positiveResult } = await capAutomatorW3F.run('onRun', { userArgs: {...userArgs, threshold} })
 
                     expect(positiveResult.canExec).to.equal(true)
                     if (!positiveResult.canExec) {
