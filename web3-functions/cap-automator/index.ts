@@ -6,6 +6,11 @@ import { addresses } from '../../utils'
 
 Web3Function.onRun(async (context: Web3FunctionContext) => {
     const { multiChainProvider, userArgs } = context
+
+    const performGasCheck = userArgs.performGasCheck as boolean
+
+
+
     const provider = multiChainProvider.default()
     const threshold = BigInt(userArgs.threshold as number)
 

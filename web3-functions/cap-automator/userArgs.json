@@ -1,3 +1,4 @@
 {
-    "threshold": 5000
+    "threshold": 5000,
+    "performGasCheck": true
 }
