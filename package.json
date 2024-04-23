@@ -39,6 +39,7 @@
     "@types/node": "18.14.0",
     "@typescript-eslint/eslint-plugin": "^5.61.0",
     "@typescript-eslint/parser": "^5.61.0",
+    "axios-mock-adapter": "^1.22.0",
     "chai": "4.3.7",
     "dotenv": "16.0.3",
     "eslint": "^8.44.0",
@@ -69,6 +70,7 @@
   "dependencies": {
     "@gelatonetwork/automate-sdk": "^3.0.2",
     "@gelatonetwork/web3-functions-sdk": "^2.3.0",
+    "axios": "^1.6.8",
     "ky": "^0.33.2"
   }
 }
