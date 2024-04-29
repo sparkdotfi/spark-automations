@@ -1,13 +1,13 @@
 import hre from 'hardhat'
 import { expect } from 'chai'
+import { Contract } from '@ethersproject/contracts'
 import { Web3FunctionHardhat } from '@gelatonetwork/web3-functions-sdk/hardhat-plugin'
+import { Web3FunctionResultCallData } from '@gelatonetwork/web3-functions-sdk/*'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { SnapshotRestorer, impersonateAccount, takeSnapshot, mine } from '@nomicfoundation/hardhat-network-helpers'
-import { Contract } from '@ethersproject/contracts'
 
 import { capAutomatorAbi, erc20Abi, poolAbi, protocolDataProviderAbi } from '../../abis'
 import { addresses } from '../../utils'
-import { Web3FunctionResultCallData } from '@gelatonetwork/web3-functions-sdk/*'
 
 const { w3f, ethers } = hre
 
@@ -43,12 +43,32 @@ describe('CapAutomator', function () {
         await pool.supply(tokenAddress, amount, signerAddress, 0)
     }
 
+    const withdraw = async (signerAddress: string, tokenAddress: string, amount: BigInt) => {
+        await impersonateAccount(signerAddress)
+        const signer = await hre.ethers.getSigner(signerAddress)
+
+        const pool = new Contract(addresses.mainnet.pool, poolAbi, signer)
+        await pool.withdraw(tokenAddress, amount, signerAddress)
+    }
+
     const borrow = async (signerAddress: string, tokenAddress: string, amount: BigInt) => {
         await impersonateAccount(signerAddress)
         const signer = await hre.ethers.getSigner(signerAddress)
 
         const pool = new Contract(addresses.mainnet.pool, poolAbi, signer)
         await pool.borrow(tokenAddress, amount, 2, 0, signerAddress)
+    }
+
+    const repay = async (signerAddress: string, tokenAddress: string, amount: BigInt) => {
+        await impersonateAccount(signerAddress)
+        const signer = await hre.ethers.getSigner(signerAddress)
+
+        const token = new Contract(tokenAddress, erc20Abi, signer)
+
+        await token.approve(addresses.mainnet.pool, amount)
+
+        const pool = new Contract(addresses.mainnet.pool, poolAbi, signer)
+        await pool.repay(tokenAddress, amount, 2, signerAddress)
     }
 
     const formatExecSupplyCallData = (assetAddress: string) =>
@@ -115,7 +135,7 @@ describe('CapAutomator', function () {
                     !result.canExec && expect(result.message).to.equal('No cap automator calls to be executed')
                 })
 
-                it(`one supply cap update is required`, async () => {
+                it(`one supply cap increase is required`, async () => {
                     const { gap } = await capAutomator.supplyCapConfigs(wbtc)
 
                     const percentageOfTheGapNeededForTrigger = (10000 - threshold) / 100 + 1
@@ -159,6 +179,47 @@ describe('CapAutomator', function () {
                     expect(supplyCapAfter).to.equal(supplyCapBefore + amountInFullTokens)
                 })
 
+                it(`one supply cap decrease is required`, async () => {
+                    const { gap } = await capAutomator.supplyCapConfigs(wbtc)
+
+                    const percentageOfTheGapNeededForTrigger = (10000 - threshold) / 100 + 1
+
+                    // full tokens * WBTC decimals * percentage of the gap
+                    const amountInFullTokens = (BigInt(gap) * BigInt(percentageOfTheGapNeededForTrigger)) / BigInt(100)
+
+                    // supplying only 1/4 of the full supply amount
+                    await supply(wbtcWhale, wbtc, amountInFullTokens * BigInt(10 ** 8))
+
+                    await capAutomator.exec(wbtc)
+
+                    await withdraw(wbtcWhale, wbtc, amountInFullTokens * BigInt(10 ** 8))
+
+                    const { result: positiveResult } = await capAutomatorW3F.run('onRun', { userArgs: { threshold } })
+
+                    expect(positiveResult.canExec).to.equal(true)
+                    if (!positiveResult.canExec) {
+                        throw ''
+                    }
+
+                    const callData = positiveResult.callData as Web3FunctionResultCallData[]
+
+                    expect(callData.length).to.equal(1)
+
+                    expect(callData[0].to).to.equal(addresses.mainnet.capAutomator)
+                    expect(callData[0].data).to.equal(formatExecSupplyCallData(wbtc))
+
+                    const supplyCapBefore = BigInt((await protocolDataProvider.getReserveCaps(wbtc)).supplyCap)
+
+                    await keeper.sendTransaction({
+                        to: callData[0].to,
+                        data: callData[0].data,
+                    })
+
+                    const supplyCapAfter = BigInt((await protocolDataProvider.getReserveCaps(wbtc)).supplyCap)
+
+                    expect(supplyCapAfter).to.equal(supplyCapBefore - amountInFullTokens)
+                })
+
                 it('two supply cap updates are required', async () => {
                     const { gap: wstethGap } = await capAutomator.supplyCapConfigs(wsteth)
                     const { gap: wbtcGap } = await capAutomator.supplyCapConfigs(wbtc)
@@ -171,6 +232,9 @@ describe('CapAutomator', function () {
                         (BigInt(wbtcGap) * BigInt(percentageOfTheGapNeededForTrigger)) / BigInt(100)
 
                     await supply(wstethWhale, wsteth, wstethAmountInFullTokens * BigInt(10 ** 18))
+                    await capAutomator.exec(wsteth)
+
+                    await withdraw(wstethWhale, wsteth, wstethAmountInFullTokens * BigInt(10 ** 18))
                     await supply(wbtcWhale, wbtc, wbtcAmountInFullTokens * BigInt(10 ** 8))
 
                     const { result } = await capAutomatorW3F.run('onRun', { userArgs: { threshold } })
@@ -205,7 +269,7 @@ describe('CapAutomator', function () {
                     const wstethSupplyCapAfter = BigInt((await protocolDataProvider.getReserveCaps(wsteth)).supplyCap)
                     const wbtcSupplyCapAfter = BigInt((await protocolDataProvider.getReserveCaps(wbtc)).supplyCap)
 
-                    expect(wstethSupplyCapAfter).to.equal(wstethSupplyCapBefore + wstethAmountInFullTokens)
+                    expect(wstethSupplyCapAfter).to.equal(wstethSupplyCapBefore - wstethAmountInFullTokens)
                     expect(wbtcSupplyCapAfter).to.equal(wbtcSupplyCapBefore + wbtcAmountInFullTokens)
                 })
             })
@@ -241,7 +305,7 @@ describe('CapAutomator', function () {
                     !result.canExec && expect(result.message).to.equal('No cap automator calls to be executed')
                 })
 
-                it('one borrow cap update is required', async () => {
+                it('one borrow cap increase is required', async () => {
                     const { gap } = await capAutomator.borrowCapConfigs(wsteth)
 
                     const percentageOfTheGapNeededForTrigger = (10000 - threshold) / 100 + 1
@@ -284,6 +348,46 @@ describe('CapAutomator', function () {
                     expect(borrowCapAfter).to.equal(borrowCapBefore + amountInFullTokens)
                 })
 
+                it('one borrow cap decrease is required', async () => {
+                    const { gap } = await capAutomator.borrowCapConfigs(wsteth)
+
+                    const percentageOfTheGapNeededForTrigger = (10000 - threshold) / 100 + 1
+
+                    const amountInFullTokens = (BigInt(gap) * BigInt(percentageOfTheGapNeededForTrigger)) / BigInt(100)
+
+                    // borrowing only 1/4 of the full borrow amount
+                    await borrow(wbtcWhale, wsteth, amountInFullTokens * BigInt(10 ** 18))
+
+                    await capAutomator.exec(wsteth)
+
+                    await repay(wbtcWhale, wsteth, amountInFullTokens * BigInt(10 ** 18))
+
+                    const { result: positiveResult } = await capAutomatorW3F.run('onRun', { userArgs: { threshold } })
+
+                    expect(positiveResult.canExec).to.equal(true)
+                    if (!positiveResult.canExec) {
+                        throw ''
+                    }
+
+                    const callData = positiveResult.callData as Web3FunctionResultCallData[]
+
+                    expect(callData.length).to.equal(1)
+
+                    expect(callData[0].to).to.equal(addresses.mainnet.capAutomator)
+                    expect(callData[0].data).to.equal(formatExecBorrowCallData(wsteth))
+
+                    const borrowCapBefore = BigInt((await protocolDataProvider.getReserveCaps(wsteth)).borrowCap)
+
+                    await keeper.sendTransaction({
+                        to: callData[0].to,
+                        data: callData[0].data,
+                    })
+
+                    const borrowCapAfter = BigInt((await protocolDataProvider.getReserveCaps(wsteth)).borrowCap)
+
+                    expect(borrowCapAfter).to.equal(borrowCapBefore - amountInFullTokens)
+                })
+
                 it('two borrow cap updates are required', async () => {
                     const { gap: wethGap } = await capAutomator.borrowCapConfigs(weth)
                     const { gap: wstethGap } = await capAutomator.borrowCapConfigs(wsteth)
@@ -296,6 +400,9 @@ describe('CapAutomator', function () {
                         (BigInt(wstethGap) * BigInt(percentageOfTheGapNeededForTrigger)) / BigInt(100)
 
                     await borrow(wstethWhale, weth, wethAmountInFullTokens * BigInt(10 ** 18))
+                    await capAutomator.exec(weth)
+
+                    await repay(wstethWhale, weth, wethAmountInFullTokens * BigInt(10 ** 18))
                     await borrow(wbtcWhale, wsteth, wstethAmountInFullTokens * BigInt(10 ** 18))
 
                     const { result } = await capAutomatorW3F.run('onRun', { userArgs: { threshold } })
@@ -332,10 +439,10 @@ describe('CapAutomator', function () {
 
                     // After initial cap setting, when fast forwarding time, some interest is accrued and added to capAfter
                     expect(Number(wethBorrowCapAfter)).to.be.greaterThanOrEqual(
-                        Number(wethBorrowCapBefore + wethAmountInFullTokens),
+                        Number(wethBorrowCapBefore - wethAmountInFullTokens),
                     )
                     expect(Number(wethBorrowCapAfter)).to.be.lessThanOrEqual(
-                        Number(((wethBorrowCapBefore + wethAmountInFullTokens) * BigInt(100015)) / BigInt(100000)),
+                        Number(((wethBorrowCapBefore - wethAmountInFullTokens) * BigInt(100015)) / BigInt(100000)),
                     )
                     expect(wstethBorrowCapAfter).to.equal(wstethBorrowCapBefore + wstethAmountInFullTokens)
                 })
@@ -348,7 +455,7 @@ describe('CapAutomator', function () {
 
         testedThresholds.forEach((threshold) => {
             describe(`${threshold / 100}% threshold`, () => {
-                it('one exec is required', async () => {
+                it('one exec is required (increase)', async () => {
                     const { gap: supplyGap } = await capAutomator.supplyCapConfigs(wsteth)
                     const { gap: borrowGap } = await capAutomator.borrowCapConfigs(wsteth)
 
@@ -394,6 +501,56 @@ describe('CapAutomator', function () {
                     expect(borrowCapAfter).to.equal(borrowCapBefore + borrowAmountInFullTokens)
                 })
 
+                it('one exec is required (decrease)', async () => {
+                    const { gap: supplyGap } = await capAutomator.supplyCapConfigs(wsteth)
+                    const { gap: borrowGap } = await capAutomator.borrowCapConfigs(wsteth)
+
+                    const percentageOfTheGapNeededForTrigger = (10000 - threshold) / 100 + 1
+
+                    const supplyAmountInFullTokens =
+                        (BigInt(supplyGap) * BigInt(percentageOfTheGapNeededForTrigger)) / BigInt(100)
+                    const borrowAmountInFullTokens =
+                        (BigInt(borrowGap) * BigInt(percentageOfTheGapNeededForTrigger)) / BigInt(100)
+
+                    await supply(wbtcWhale, wbtc, BigInt(400) * BigInt(10 ** 8))
+                    await capAutomator.execSupply(wbtc)
+
+                    await supply(wstethWhale, wsteth, supplyAmountInFullTokens * BigInt(10 ** 18))
+                    await borrow(wbtcWhale, wsteth, borrowAmountInFullTokens * BigInt(10 ** 18))
+                    await capAutomator.exec(wsteth)
+
+                    await withdraw(wstethWhale, wsteth, supplyAmountInFullTokens * BigInt(10 ** 18))
+                    await repay(wbtcWhale, wsteth, borrowAmountInFullTokens * BigInt(10 ** 18))
+
+                    const { result: positiveResult } = await capAutomatorW3F.run('onRun', { userArgs: { threshold } })
+
+                    expect(positiveResult.canExec).to.equal(true)
+                    if (!positiveResult.canExec) {
+                        throw ''
+                    }
+
+                    const callData = positiveResult.callData as Web3FunctionResultCallData[]
+
+                    expect(callData.length).to.equal(1)
+
+                    expect(callData[0].to).to.equal(addresses.mainnet.capAutomator)
+                    expect(callData[0].data).to.equal(formatExecCallData(wsteth))
+
+                    const supplyCapBefore = BigInt((await protocolDataProvider.getReserveCaps(wsteth)).supplyCap)
+                    const borrowCapBefore = BigInt((await protocolDataProvider.getReserveCaps(wsteth)).borrowCap)
+
+                    await keeper.sendTransaction({
+                        to: callData[0].to,
+                        data: callData[0].data,
+                    })
+
+                    const supplyCapAfter = BigInt((await protocolDataProvider.getReserveCaps(wsteth)).supplyCap)
+                    const borrowCapAfter = BigInt((await protocolDataProvider.getReserveCaps(wsteth)).borrowCap)
+
+                    expect(supplyCapAfter).to.equal(supplyCapBefore - supplyAmountInFullTokens)
+                    expect(borrowCapAfter).to.equal(borrowCapBefore - borrowAmountInFullTokens)
+                })
+
                 it('two execs are required', async () => {
                     const percentageOfTheGapNeededForTrigger = (10000 - threshold) / 100 + 1
 
@@ -413,8 +570,8 @@ describe('CapAutomator', function () {
                     const wbtcBorrowAmountInFullTokens =
                         (BigInt(wbtcBorrowGap) * BigInt(percentageOfTheGapNeededForTrigger)) / BigInt(100)
 
-                    await supply(wbtcWhale, wbtc, wbtcSupplyAmountInFullTokens * BigInt(10 ** 8))
                     await supply(wstethWhale, wsteth, wstethSupplyAmountInFullTokens * BigInt(10 ** 18))
+                    await supply(wbtcWhale, wbtc, wbtcSupplyAmountInFullTokens * BigInt(10 ** 8))
 
                     await borrow(wbtcWhale, wsteth, wstethBorrowAmountInFullTokens * BigInt(10 ** 18))
                     await borrow(wstethWhale, wbtc, wbtcBorrowAmountInFullTokens * BigInt(10 ** 8))
