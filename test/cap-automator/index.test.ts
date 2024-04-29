@@ -31,7 +31,7 @@ describe('CapAutomator', function () {
     const wbtcWhale = '0xb20Fb60E27a1Be799b5e04159eC2024CC3734eD7' as const
     const wstethWhale = '0x5fEC2f34D80ED82370F733043B6A536d7e9D7f8d' as const
 
-    const deposit = async (signerAddress: string, tokenAddress: string, amount: BigInt) => {
+    const supply = async (signerAddress: string, tokenAddress: string, amount: BigInt) => {
         await impersonateAccount(signerAddress)
         const signer = await hre.ethers.getSigner(signerAddress)
 
@@ -101,13 +101,13 @@ describe('CapAutomator', function () {
                 it(`actual gap is smaller than optimal but the threshold is not met`, async () => {
                     const { gap } = await capAutomator.supplyCapConfigs(wbtc)
 
-                    const percentageOfTheGapTooSmallToTrigger = (10000 - threshold) / 100 - 1
+                    const percentageOfTheGapTooSmallToTrigger = (10000 - threshold) / 100
 
                     // full tokens * WBTC decimals * percentage of the gap
                     const amountInFullTokens = (BigInt(gap) * BigInt(percentageOfTheGapTooSmallToTrigger)) / BigInt(100)
 
-                    // depositing only 1/4 of the full amount
-                    await deposit(wbtcWhale, wbtc, amountInFullTokens * BigInt(10 ** 8))
+                    // supplying only 1/4 of the full amount
+                    await supply(wbtcWhale, wbtc, amountInFullTokens * BigInt(10 ** 8))
 
                     const { result } = await capAutomatorW3F.run('onRun', { userArgs: { threshold } })
 
@@ -123,15 +123,15 @@ describe('CapAutomator', function () {
                     // full tokens * WBTC decimals * percentage of the gap
                     const amountInFullTokens = (BigInt(gap) * BigInt(percentageOfTheGapNeededForTrigger)) / BigInt(100)
 
-                    // depositing only 1/4 of the full deposit amount
-                    await deposit(wbtcWhale, wbtc, (amountInFullTokens * BigInt(10 ** 8)) / BigInt(4))
+                    // supplying only 1/4 of the full supply amount
+                    await supply(wbtcWhale, wbtc, (amountInFullTokens * BigInt(10 ** 8)) / BigInt(4))
 
                     const { result: negativeResult } = await capAutomatorW3F.run('onRun', { userArgs: { threshold } })
 
                     expect(negativeResult.canExec).to.equal(false)
 
-                    // depositing remaining of the full deposit amount
-                    await deposit(wbtcWhale, wbtc, (amountInFullTokens * BigInt(10 ** 8) * BigInt(3)) / BigInt(4))
+                    // supplying remaining of the full supply amount
+                    await supply(wbtcWhale, wbtc, (amountInFullTokens * BigInt(10 ** 8) * BigInt(3)) / BigInt(4))
 
                     const { result: positiveResult } = await capAutomatorW3F.run('onRun', { userArgs: { threshold } })
 
@@ -170,8 +170,8 @@ describe('CapAutomator', function () {
                     const wbtcAmountInFullTokens =
                         (BigInt(wbtcGap) * BigInt(percentageOfTheGapNeededForTrigger)) / BigInt(100)
 
-                    await deposit(wstethWhale, wsteth, wstethAmountInFullTokens * BigInt(10 ** 18))
-                    await deposit(wbtcWhale, wbtc, wbtcAmountInFullTokens * BigInt(10 ** 8))
+                    await supply(wstethWhale, wsteth, wstethAmountInFullTokens * BigInt(10 ** 18))
+                    await supply(wbtcWhale, wbtc, wbtcAmountInFullTokens * BigInt(10 ** 8))
 
                     const { result } = await capAutomatorW3F.run('onRun', { userArgs: { threshold } })
 
@@ -214,8 +214,8 @@ describe('CapAutomator', function () {
 
     describe('execBorrow', () => {
         beforeEach(async () => {
-            await deposit(wstethWhale, wsteth, BigInt(40000) * BigInt(10 ** 18))
-            await deposit(wbtcWhale, wbtc, BigInt(400) * BigInt(10 ** 8))
+            await supply(wstethWhale, wsteth, BigInt(40000) * BigInt(10 ** 18))
+            await supply(wbtcWhale, wbtc, BigInt(400) * BigInt(10 ** 8))
             await capAutomator.execSupply(wsteth)
             await capAutomator.execSupply(wbtc)
             await mine(2, { interval: 24 * 60 * 60 })
@@ -228,7 +228,7 @@ describe('CapAutomator', function () {
                 it(`actual gap is smaller than optimal but the threshold is not met`, async () => {
                     const { gap } = await capAutomator.borrowCapConfigs(wsteth)
 
-                    const percentageOfTheGapTooSmallToTrigger = (10000 - threshold) / 100 + 1
+                    const percentageOfTheGapTooSmallToTrigger = (10000 - threshold) / 100
 
                     const amountInFullTokens = (BigInt(gap) * BigInt(percentageOfTheGapTooSmallToTrigger)) / BigInt(100)
 
@@ -255,7 +255,7 @@ describe('CapAutomator', function () {
 
                     expect(negativeResult.canExec).to.equal(false)
 
-                    // borrowing remaining of the full deposit amount
+                    // borrowing remaining of the full supply amount
                     await borrow(wbtcWhale, wsteth, (amountInFullTokens * BigInt(10 ** 18) * BigInt(3)) / BigInt(4))
 
                     const { result: positiveResult } = await capAutomatorW3F.run('onRun', { userArgs: { threshold } })
@@ -359,10 +359,10 @@ describe('CapAutomator', function () {
                     const borrowAmountInFullTokens =
                         (BigInt(borrowGap) * BigInt(percentageOfTheGapNeededForTrigger)) / BigInt(100)
 
-                    await deposit(wbtcWhale, wbtc, BigInt(400) * BigInt(10 ** 8))
+                    await supply(wbtcWhale, wbtc, BigInt(400) * BigInt(10 ** 8))
                     await capAutomator.execSupply(wbtc)
 
-                    await deposit(wstethWhale, wsteth, supplyAmountInFullTokens * BigInt(10 ** 18))
+                    await supply(wstethWhale, wsteth, supplyAmountInFullTokens * BigInt(10 ** 18))
                     await borrow(wbtcWhale, wsteth, borrowAmountInFullTokens * BigInt(10 ** 18))
 
                     const { result: positiveResult } = await capAutomatorW3F.run('onRun', { userArgs: { threshold } })
@@ -413,8 +413,8 @@ describe('CapAutomator', function () {
                     const wbtcBorrowAmountInFullTokens =
                         (BigInt(wbtcBorrowGap) * BigInt(percentageOfTheGapNeededForTrigger)) / BigInt(100)
 
-                    await deposit(wbtcWhale, wbtc, wbtcSupplyAmountInFullTokens * BigInt(10 ** 8))
-                    await deposit(wstethWhale, wsteth, wstethSupplyAmountInFullTokens * BigInt(10 ** 18))
+                    await supply(wbtcWhale, wbtc, wbtcSupplyAmountInFullTokens * BigInt(10 ** 8))
+                    await supply(wstethWhale, wsteth, wstethSupplyAmountInFullTokens * BigInt(10 ** 18))
 
                     await borrow(wbtcWhale, wsteth, wstethBorrowAmountInFullTokens * BigInt(10 ** 18))
                     await borrow(wstethWhale, wbtc, wbtcBorrowAmountInFullTokens * BigInt(10 ** 8))
@@ -484,8 +484,8 @@ describe('CapAutomator', function () {
                     const wethBorrowAmountInFullTokens =
                         (BigInt(wethBorrowGap) * BigInt(percentageOfTheGapNeededForTrigger)) / BigInt(100)
 
-                    await deposit(wbtcWhale, wbtc, wbtcSupplyAmountInFullTokens * BigInt(10 ** 8))
-                    await deposit(wstethWhale, wsteth, wstethSupplyAmountInFullTokens * BigInt(10 ** 18))
+                    await supply(wbtcWhale, wbtc, wbtcSupplyAmountInFullTokens * BigInt(10 ** 8))
+                    await supply(wstethWhale, wsteth, wstethSupplyAmountInFullTokens * BigInt(10 ** 18))
 
                     await borrow(wbtcWhale, wsteth, wstethBorrowAmountInFullTokens * BigInt(10 ** 18))
                     await borrow(wstethWhale, weth, wethBorrowAmountInFullTokens * BigInt(10 ** 18))
