@@ -16,26 +16,26 @@ Web3 Functions are currently in private Beta and can only be used by whitelisted
 
 ## Table of Content
 
-- [What are Web3 Functions?](#what-are-web3-functions)
-- [Documentation](#documentation)
-- [Private Beta Restriction](#private-beta-restriction)
-- [Table of Content](#table-of-content)
-- [Project Setup](#project-setup)
-- [Hardhat Config](#hardhat-config)
-- [Write a Web3 Function](#write-a-web3-function)
-- [Test your web3 function](#test-your-web3-function)
-  - [Calling your web3 function](#calling-your-web3-function)
-  - [Writing unit test for your web3 function](#writing-unit-test-for-your-web3-function)
-- [Use User arguments](#use-user-arguments)
-- [Use State / Storage](#use-state--storage)
-- [Use user secrets](#use-user-secrets)
-- [Deploy your Web3Function on IPFS](#deploy-your-web3function-on-ipfs)
-- [Create your Web3Function task](#create-your-web3function-task)
-- [More examples](#more-examples)
-  - [Coingecko oracle](#coingecko-oracle)
-  - [Event listener](#event-listener)
-  - [Secrets](#secrets)
-  - [Advertising Board](#advertising-board)
+-   [What are Web3 Functions?](#what-are-web3-functions)
+-   [Documentation](#documentation)
+-   [Private Beta Restriction](#private-beta-restriction)
+-   [Table of Content](#table-of-content)
+-   [Project Setup](#project-setup)
+-   [Hardhat Config](#hardhat-config)
+-   [Write a Web3 Function](#write-a-web3-function)
+-   [Test your web3 function](#test-your-web3-function)
+    -   [Calling your web3 function](#calling-your-web3-function)
+    -   [Writing unit test for your web3 function](#writing-unit-test-for-your-web3-function)
+-   [Use User arguments](#use-user-arguments)
+-   [Use State / Storage](#use-state--storage)
+-   [Use user secrets](#use-user-secrets)
+-   [Deploy your Web3Function on IPFS](#deploy-your-web3function-on-ipfs)
+-   [Create your Web3Function task](#create-your-web3function-task)
+-   [More examples](#more-examples)
+    -   [Coingecko oracle](#coingecko-oracle)
+    -   [Event listener](#event-listener)
+    -   [Secrets](#secrets)
+    -   [Advertising Board](#advertising-board)
 
 ## Project Setup
 
@@ -47,13 +47,13 @@ yarn install
 
 2. Configure your local environment:
 
-- Copy `.env.example` to init your own `.env` file
+-   Copy `.env.example` to init your own `.env` file
 
 ```
 cp .env.example .env
 ```
 
-- Complete your `.env` file with your private settings
+-   Complete your `.env` file with your private settings
 
 ```
 ALCHEMY_ID=
@@ -64,9 +64,9 @@ PRIVATE_KEY=
 
 In `hardhat.config.ts`, you can set up configurations for your Web3 Function runtime.
 
-  - `rootDir`: Directory which contains all web3 functions directories.
-  - `debug`: Run your web3 functions with debug mode on.
-  - `networks`: Provider of these networks will be injected into web3 function's multi chain provider.
+-   `rootDir`: Directory which contains all web3 functions directories.
+-   `debug`: Run your web3 functions with debug mode on.
+-   `networks`: Provider of these networks will be injected into web3 function's multi chain provider.
 
 ```ts
   w3f: {
@@ -78,70 +78,69 @@ In `hardhat.config.ts`, you can set up configurations for your Web3 Function run
 
 ## Write a Web3 Function
 
-- Go to `web3-functions/index.ts`
-- Write your Web3 Function logic within the `Web3Function.onRun` function.
-- Example:
+-   Go to `web3-functions/index.ts`
+-   Write your Web3 Function logic within the `Web3Function.onRun` function.
+-   Example:
 
 ```typescript
-import {
-  Web3Function,
-  Web3FunctionContext,
-} from "@gelatonetwork/web3-functions-sdk";
-import { Contract } from "@ethersproject/contracts";
-import ky from "ky"; // we recommend using ky as axios doesn't support fetch by default
+import { Web3Function, Web3FunctionContext } from '@gelatonetwork/web3-functions-sdk'
+import { Contract } from '@ethersproject/contracts'
+import ky from 'ky' // we recommend using ky as axios doesn't support fetch by default
 
-const ORACLE_ABI = [
-  "function lastUpdated() external view returns(uint256)",
-  "function updatePrice(uint256)",
-];
+const ORACLE_ABI = ['function lastUpdated() external view returns(uint256)', 'function updatePrice(uint256)']
 
 Web3Function.onRun(async (context: Web3FunctionContext) => {
-  const { userArgs, gelatoArgs, multiChainProvider } = context;
+    const { userArgs, gelatoArgs, multiChainProvider } = context
 
-  const provider = multiChainProvider.default();
+    const provider = multiChainProvider.default()
 
-  // Retrieve Last oracle update time
-  const oracleAddress = "0x71B9B0F6C999CBbB0FeF9c92B80D54e4973214da";
-  const oracle = new Contract(oracleAddress, ORACLE_ABI, provider);
-  const lastUpdated = parseInt(await oracle.lastUpdated());
-  console.log(`Last oracle update: ${lastUpdated}`);
+    // Retrieve Last oracle update time
+    const oracleAddress = '0x71B9B0F6C999CBbB0FeF9c92B80D54e4973214da'
+    const oracle = new Contract(oracleAddress, ORACLE_ABI, provider)
+    const lastUpdated = parseInt(await oracle.lastUpdated())
+    console.log(`Last oracle update: ${lastUpdated}`)
 
-  // Check if it's ready for a new update
-  const nextUpdateTime = lastUpdated + 300; // 5 min
-  const timestamp = (await provider.getBlock("latest")).timestamp;
-  console.log(`Next oracle update: ${nextUpdateTime}`);
-  if (timestamp < nextUpdateTime) {
-    return { canExec: false, message: `Time not elapsed` };
-  }
+    // Check if it's ready for a new update
+    const nextUpdateTime = lastUpdated + 300 // 5 min
+    const timestamp = (await provider.getBlock('latest')).timestamp
+    console.log(`Next oracle update: ${nextUpdateTime}`)
+    if (timestamp < nextUpdateTime) {
+        return { canExec: false, message: `Time not elapsed` }
+    }
 
-  // Get current price on coingecko
-  const currency = "ethereum";
-  const priceData: any = await ky
-    .get(
-      `https://api.coingecko.com/api/v3/simple/price?ids=${currency}&vs_currencies=usd`,
-      { timeout: 5_000, retry: 0 }
-    )
-    .json();
-  price = Math.floor(priceData[currency].usd);
-  console.log(`Updating price: ${price}`);
+    // Get current price on coingecko
+    const currency = 'ethereum'
+    const priceData: any = await ky
+        .get(`https://api.coingecko.com/api/v3/simple/price?ids=${currency}&vs_currencies=usd`, {
+            timeout: 5_000,
+            retry: 0,
+        })
+        .json()
+    price = Math.floor(priceData[currency].usd)
+    console.log(`Updating price: ${price}`)
 
-  // Return execution call data
-  return {
-    canExec: true,
-    callData: [{to: oracleAddress, data: oracle.interface.encodeFunctionData("updatePrice", [price])}],
-  };
-});
+    // Return execution call data
+    return {
+        canExec: true,
+        callData: [
+            {
+                to: oracleAddress,
+                data: oracle.interface.encodeFunctionData('updatePrice', [price]),
+            },
+        ],
+    }
+})
 ```
 
-- Each Web3 Function has a `schema.json` file to specify the runtime configuration. In later versions you will have more optionality to define what resources your Web3 Function requires.
+-   Each Web3 Function has a `schema.json` file to specify the runtime configuration. In later versions you will have more optionality to define what resources your Web3 Function requires.
 
 ```json
 {
-  "web3FunctionVersion": "2.0.0",
-  "runtime": "js-1.0",
-  "memory": 128,
-  "timeout": 30,
-  "userArgs": {}
+    "web3FunctionVersion": "2.0.0",
+    "runtime": "js-1.0",
+    "memory": 128,
+    "timeout": 30,
+    "userArgs": {}
 }
 ```
 
@@ -149,13 +148,13 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
 
 ### Calling your web3 function
 
-- Use `npx hardhat w3f-run W3FNAME` command to test your function (replace W3FNAME with the folder name containing your web3 function)
+-   Use `npx hardhat w3f-run W3FNAME` command to test your function (replace W3FNAME with the folder name containing your web3 function)
 
-- Options:
+-   Options:
 
-  - `--logs` Show internal Web3 Function logs
-  - `--debug` Show Runtime debug messages
-  - `--network [NETWORK]` Set the default runtime network & provider. 
+    -   `--logs` Show internal Web3 Function logs
+    -   `--debug` Show Runtime debug messages
+    -   `--network [NETWORK]` Set the default runtime network & provider.
 
 If your web3 function has arguments, you can define them in [`hardhat.config.ts`](./hardhat.config.ts).
 
@@ -189,8 +188,8 @@ Web3Function Runtime stats:
 
 ### Writing unit test for your web3 function
 
-- Define your tests in `test/index.test.ts`
-- Use `yarn test` command to run unit test suite.
+-   Define your tests in `test/index.test.ts`
+-   Use `yarn test` command to run unit test suite.
 
 Hardhat will run your tests in a forked environment by default. You can configure this in `hardhat.config.ts`.
 
@@ -215,19 +214,19 @@ Hardhat will run your tests in a forked environment by default. You can configur
 Calling your web3 function:
 
 ```ts
-import hre from "hardhat";
-const { w3f } = hre;
+import hre from 'hardhat'
+const { w3f } = hre
 
-const oracleW3f = w3f.get("oracle");
+const oracleW3f = w3f.get('oracle')
 
 const userArgs = {
-  currency: "ethereum",
-  oracle: oracle.address,
-};
+    currency: 'ethereum',
+    oracle: oracle.address,
+}
 
-const storage = {};
+const storage = {}
 
-await oracleW3f.run({storage, userArgs});
+await oracleW3f.run({ storage, userArgs })
 ```
 
 `userArgs` and `storage` are optional here. When passed, it overrides the arguments defined in `userArgs.json` and `storage.json`.
@@ -238,14 +237,14 @@ await oracleW3f.run({storage, userArgs});
 
 ```json
 {
-  "web3FunctionVersion": "2.0.0",
-  "runtime": "js-1.0",
-  "memory": 128,
-  "timeout": 30,
-  "userArgs": {
-    "currency": "string",
-    "oracle": "string"
-  }
+    "web3FunctionVersion": "2.0.0",
+    "runtime": "js-1.0",
+    "memory": 128,
+    "timeout": 30,
+    "userArgs": {
+        "currency": "string",
+        "oracle": "string"
+    }
 }
 ```
 
@@ -253,22 +252,21 @@ await oracleW3f.run({storage, userArgs});
 
 ```typescript
 Web3Function.onRun(async (context: Web3FunctionContext) => {
-  const { userArgs, gelatoArgs, secrets } = context;
+    const { userArgs, gelatoArgs, secrets } = context
 
-  // User args:
-  console.log("Currency:", userArgs.currency);
-  console.log("Oracle:", userArgs.oracle);
-});
+    // User args:
+    console.log('Currency:', userArgs.currency)
+    console.log('Oracle:', userArgs.oracle)
+})
 ```
 
 3. Populate `userArgs` in `userArgs.json` and test your web3 function:
 
 ```json
 {
-  "currency": "ethereum",
-  "oracle": "0x71B9B0F6C999CBbB0FeF9c92B80D54e4973214da"
+    "currency": "ethereum",
+    "oracle": "0x71B9B0F6C999CBbB0FeF9c92B80D54e4973214da"
 }
-
 ```
 
 ```
@@ -283,33 +281,30 @@ If you need to manage some state variable, we provide a simple key/value store t
 See the below example to read & update values from your storage:
 
 ```typescript
-import {
-  Web3Function,
-  Web3FunctionContext,
-} from "@gelatonetwork/web3-functions-sdk";
+import { Web3Function, Web3FunctionContext } from '@gelatonetwork/web3-functions-sdk'
 
 Web3Function.onRun(async (context: Web3FunctionContext) => {
-  const { storage, multiChainProvider } = context;
+    const { storage, multiChainProvider } = context
 
-  const provider = multiChainProvider.default();
+    const provider = multiChainProvider.default()
 
-  // Use storage to retrieve previous state (stored values are always string)
-  const lastBlockStr = (await storage.get("lastBlockNumber")) ?? "0";
-  const lastBlock = parseInt(lastBlockStr);
-  console.log(`Last block: ${lastBlock}`);
+    // Use storage to retrieve previous state (stored values are always string)
+    const lastBlockStr = (await storage.get('lastBlockNumber')) ?? '0'
+    const lastBlock = parseInt(lastBlockStr)
+    console.log(`Last block: ${lastBlock}`)
 
-  const newBlock = await provider.getBlockNumber();
-  console.log(`New block: ${newBlock}`);
-  if (newBlock > lastBlock) {
-    // Update storage to persist your current state (values must be cast to string)
-    await storage.set("lastBlockNumber", newBlock.toString());
-  }
+    const newBlock = await provider.getBlockNumber()
+    console.log(`New block: ${newBlock}`)
+    if (newBlock > lastBlock) {
+        // Update storage to persist your current state (values must be cast to string)
+        await storage.set('lastBlockNumber', newBlock.toString())
+    }
 
-  return {
-    canExec: false,
-    message: `Updated block number: ${newBlock.toString()}`,
-  };
-});
+    return {
+        canExec: false,
+        message: `Updated block number: ${newBlock.toString()}`,
+    }
+})
 ```
 
 Test storage execution:<br/>
@@ -334,13 +329,13 @@ COINGECKO_API=https://api.coingecko.com/api/v3
 
 ```typescript
 // Get api from secrets
-const coingeckoApi = await context.secrets.get("COINGECKO_API");
-if (!coingeckoApi)
-  return { canExec: false, message: `COINGECKO_API not set in secrets` };
+const coingeckoApi = await context.secrets.get('COINGECKO_API')
+if (!coingeckoApi) return { canExec: false, message: `COINGECKO_API not set in secrets` }
 ```
 
 3. Test your Web3 Function using secrets:<br/>
    `npx hardhat w3f-run secrets --logs`
+
 ## Deploy your Web3Function on IPFS
 
 Use `npx hardhat w3f-deploy W3FNAME` command to deploy your web3 function.
@@ -364,24 +359,24 @@ Use the `automate-sdk` to easily create a new task (make sure you have your priv
 
 ```typescript
 const { taskId, tx } = await automate.createBatchExecTask({
-  name: "Web3Function - Eth Oracle",
-  web3FunctionHash: cid,
-  web3FunctionArgs: {
-    oracle: oracle.address,
-    currency: "ethereum",
-  },
-});
-await tx.wait();
+    name: 'Web3Function - Eth Oracle',
+    web3FunctionHash: cid,
+    web3FunctionArgs: {
+        oracle: oracle.address,
+        currency: 'ethereum',
+    },
+})
+await tx.wait()
 ```
 
 If your task utilizes secrets, you can set them after the task has been created.
 
 ```typescript
 // Set task specific secrets
-const secrets = oracleW3f.getSecrets();
+const secrets = oracleW3f.getSecrets()
 if (Object.keys(secrets).length > 0) {
-  await web3Function.secrets.set(secrets, taskId);
-  console.log(`Secrets set`);
+    await web3Function.secrets.set(secrets, taskId)
+    console.log(`Secrets set`)
 }
 ```
 
