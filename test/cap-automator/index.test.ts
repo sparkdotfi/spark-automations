@@ -85,6 +85,7 @@ describe('CapAutomator', function () {
     before(async () => {
         capAutomatorW3F = w3f.get('cap-automator')
         await capAutomatorW3F.run('onRun', { userArgs })
+
         ;[reader, keeper] = await ethers.getSigners()
 
         pool = new Contract(addresses.mainnet.pool, poolAbi, reader)
