@@ -4,6 +4,7 @@
   "memory": 128,
   "timeout": 300,
   "userArgs": {
-    "threshold": "number"
+    "threshold": "number",
+    "performGasCheck": "boolean"
   }
 }
