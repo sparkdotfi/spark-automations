@@ -1,26 +1,28 @@
-name: test
+name: CI
 
-on: workflow_dispatch
+on:
+    pull_request:
+    push:
+        branches:
+            - master
 
 jobs:
   check:
     strategy:
       fail-fast: true
 
-    name: Foundry project
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v3
+
+      - name: Install yarn
+        run: npm install -g yarn
+
       - name: Run yarn install
-        run: |
-          yarn install
-        id: install
+        run: yarn install
 
       - name: Run linter
-        run: |
-          yarn lint
-        id: linter
+        run: yarn lint
 
       - name: Run tests
-        run: |
-          yarn test
-        id: test
+        run: yarn test
