@@ -1,6 +1,6 @@
-import axios from 'axios'
 import { Contract } from '@ethersproject/contracts'
 import { Web3Function, Web3FunctionContext } from '@gelatonetwork/web3-functions-sdk'
+import axios from 'axios'
 
 import { capAutomatorAbi, multicallAbi, poolAbi, protocolDataProviderAbi } from '../../abis'
 import { addresses, gasAboveAverage } from '../../utils'

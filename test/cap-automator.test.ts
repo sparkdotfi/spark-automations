@@ -544,7 +544,9 @@ describe('CapAutomator', function () {
                     await withdraw(wstethWhale, wsteth, supplyAmountInFullTokens * BigInt(10 ** 18))
                     await repay(wbtcWhale, wsteth, borrowAmountInFullTokens * BigInt(10 ** 18))
 
-                    const { result: positiveResult } = await capAutomatorW3F.run('onRun', { userArgs: { ...userArgs, threshold } })
+                    const { result: positiveResult } = await capAutomatorW3F.run('onRun', {
+                        userArgs: { ...userArgs, threshold },
+                    })
 
                     expect(positiveResult.canExec).to.equal(true)
                     if (!positiveResult.canExec) {
