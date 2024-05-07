@@ -1,0 +1,26 @@
+name: test
+
+on: workflow_dispatch
+
+jobs:
+  check:
+    strategy:
+      fail-fast: true
+
+    name: Foundry project
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run yarn install
+        run: |
+          yarn install
+        id: install
+
+      - name: Run linter
+        run: |
+          yarn lint
+        id: linter
+
+      - name: Run tests
+        run: |
+          yarn test
+        id: test
