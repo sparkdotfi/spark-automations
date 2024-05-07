@@ -11,7 +11,7 @@ import { addresses, ilk } from '../../utils'
 
 const { w3f, ethers } = hre
 
-describe.only('d3mTicker', function () {
+describe('d3mTicker', function () {
     this.timeout(0)
 
     let snapshotRestorer: SnapshotRestorer
@@ -27,6 +27,7 @@ describe.only('d3mTicker', function () {
     let artDifferenceOnTheFork: bigint
 
     let threshold: string
+    let userArgs = { threshold: 0, performGasCheck: false }
 
     before(async () => {
         ;[reader, keeper] = await ethers.getSigners()
@@ -67,17 +68,17 @@ describe.only('d3mTicker', function () {
         await snapshotRestorer.restore()
     })
 
-    it('threshold not met', async () => {
+    it('threshold is not met', async () => {
         threshold = (artDifferenceOnTheFork + BigInt(1)).toString()
-        const { result } = await d3mTickerW3F.run('onRun', { userArgs: { threshold } })
+        const { result } = await d3mTickerW3F.run('onRun', { userArgs: { ...userArgs, threshold } })
 
         expect(result.canExec).to.equal(false)
         !result.canExec && expect(result.message).to.equal('Threshold not met')
     })
 
-    it('threshold met', async () => {
+    it('threshold is met', async () => {
         threshold = (artDifferenceOnTheFork - BigInt(1)).toString()
-        const { result } = await d3mTickerW3F.run('onRun', { userArgs: { threshold } })
+        const { result } = await d3mTickerW3F.run('onRun', { userArgs: { ...userArgs, threshold } })
 
         expect(result.canExec).to.equal(true)
 
