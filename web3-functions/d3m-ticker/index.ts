@@ -1,11 +1,23 @@
+import axios from 'axios'
 import { Contract } from '@ethersproject/contracts'
 import { Web3Function, Web3FunctionContext } from '@gelatonetwork/web3-functions-sdk'
 
 import { d3mHubAbi, multicallAbi, vatAbi } from '../../abis'
-import { addresses, ilk } from '../../utils'
+import { addresses, gasAboveAverage, ilk } from '../../utils'
 
 Web3Function.onRun(async (context: Web3FunctionContext) => {
-    const { multiChainProvider, userArgs } = context
+    const { multiChainProvider, userArgs, gelatoArgs } = context
+
+    const performGasCheck = userArgs.performGasCheck as boolean
+    const currentGasPrice = BigInt(gelatoArgs.gasPrice.toString())
+
+    if (performGasCheck && (await gasAboveAverage(axios, '', currentGasPrice)())) {
+        return {
+            canExec: false,
+            message: 'Gas above average',
+        }
+    }
+
     const provider = multiChainProvider.default()
     const threshold = BigInt(userArgs.threshold as string)
 
