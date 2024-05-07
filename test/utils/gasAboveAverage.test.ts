@@ -2,7 +2,7 @@ import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import { expect } from 'chai'
 
-import { formatDateArguments, gasAboveAverage } from '../../web3-functions/cap-automator/gasAboveAverage'
+import { formatDateArguments, gasAboveAverage } from '../../utils/gasAboveAverage'
 
 describe('gasAboveAverage', function () {
     const gwei = BigInt(10 ** 9)

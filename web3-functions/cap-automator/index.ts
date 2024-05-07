@@ -3,8 +3,7 @@ import { Web3Function, Web3FunctionContext } from '@gelatonetwork/web3-functions
 import axios from 'axios'
 
 import { capAutomatorAbi, multicallAbi, poolAbi, protocolDataProviderAbi } from '../../abis'
-import { addresses } from '../../utils'
-import { gasAboveAverage } from './gasAboveAverage'
+import { addresses, gasAboveAverage } from '../../utils'
 
 Web3Function.onRun(async (context: Web3FunctionContext) => {
     const { multiChainProvider, userArgs, gelatoArgs } = context
