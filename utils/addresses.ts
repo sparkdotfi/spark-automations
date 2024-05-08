@@ -3,6 +3,7 @@ export const addresses = {
         capAutomator: '0x2276f52afba7Cf2525fd0a050DF464AC8532d0ef',
         d3mHub: '0x12F36cdEA3A28C35aC8C6Cc71D9265c17C74A27F',
         d3mPool: '0xAfA2DD8a0594B2B24B59de405Da9338C4Ce23437',
+        killSwitchOracle: '0x909A86f78e1cdEd68F9c2Fe2c9CD922c401abe82',
         multicall: '0xeefBa1e63905eF1D7ACbA5a8513c70307C1cE441',
         pool: '0xC13e21B648A5Ee794902342038FF3aDAB66BE987',
         protocolDataProvider: '0xFc21d6d146E6086B8359705C8b28512a983db0cb',
