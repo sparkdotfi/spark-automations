@@ -107,7 +107,7 @@ describe('d3mTicker', function () {
     })
 
     it('threshold is met (edge case)', async () => {
-        threshold = (artDifferenceOnTheFork).toString()
+        threshold = artDifferenceOnTheFork.toString()
         const { result } = await d3mTickerW3F.run('onRun', { userArgs: { ...userArgs, threshold } })
 
         expect(result.canExec).to.equal(true)
