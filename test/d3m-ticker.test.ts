@@ -105,4 +105,34 @@ describe('d3mTicker', function () {
 
         expect(artBefore).to.not.equal(artAfter)
     })
+
+    it('threshold is met (edge case)', async () => {
+        threshold = (artDifferenceOnTheFork).toString()
+        const { result } = await d3mTickerW3F.run('onRun', { userArgs: { ...userArgs, threshold } })
+
+        expect(result.canExec).to.equal(true)
+
+        if (!result.canExec) {
+            throw ''
+        }
+        const callData = result.callData as Web3FunctionResultCallData[]
+
+        expect(callData).to.deep.equal([
+            {
+                to: addresses.mainnet.d3mHub,
+                data: d3mHub.interface.encodeFunctionData('exec', [ilk]),
+            },
+        ])
+
+        const [, artBefore] = await vat.urns(ilk, addresses.mainnet.d3mPool)
+
+        await keeper.sendTransaction({
+            to: callData[0].to,
+            data: callData[0].data,
+        })
+
+        const [, artAfter] = await vat.urns(ilk, addresses.mainnet.d3mPool)
+
+        expect(artBefore).to.not.equal(artAfter)
+    })
 })

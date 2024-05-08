@@ -47,7 +47,7 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
             ? BigInt(artBefore) - BigInt(artAfter)
             : BigInt(artAfter) - BigInt(artBefore)
 
-    if (artDifference > threshold) {
+    if (artDifference >= threshold) {
         return {
             canExec: true,
             callData: [
