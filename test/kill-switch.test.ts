@@ -46,14 +46,24 @@ describe.only('KillSwitch', function () {
     })
 
     it.skip('one oracle meets the threshold', async () => {
+        // Add a new oracle to the kill switch oracle contract with threshold under the price
+
         const { result } = await killSwitchW3F.run('onRun')
 
         expect(result.canExec).to.equal(true)
+
+        // Check that returned calldata matches desired calldata (call KSO with the new oracle address)
+        // Execute the call, check that the state of the KSO was changed to triggered
     })
 
     it.skip('multiple oracles meet the threshold', async () => {
+        // Add two new oracles to the kill switch oracle contract with threshold under the price
+
         const { result } = await killSwitchW3F.run('onRun')
 
         expect(result.canExec).to.equal(true)
+
+        // Check that returned calldata matches desired calldata (call KSO with the first of the new oracles address)
+        // Execute the call, check that the state of the KSO was changed to triggered
     })
 })
