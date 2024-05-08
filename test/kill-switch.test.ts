@@ -37,7 +37,8 @@ describe.only('KillSwitch', function () {
         await snapshotRestorer.restore()
     })
 
-    it('test', async () => {
+    it('No oracles meet the threshold', async () => {
+        // No thresholds are met at the forked state
         const { result } = await killSwitchW3F.run('onRun')
 
         expect(result.canExec).to.equal(false)
