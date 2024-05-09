@@ -37,7 +37,7 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
         ]
     }
 
-    const multicallResults = (await multicall.callStatic.aggregate(multicallCalls)).returnData
+    let multicallResults = (await multicall.callStatic.aggregate(multicallCalls)).returnData
 
     for (const oracleAddress of oracleAddresses) {
         const oracle = new Contract(oracleAddress, oracleAbi, provider)
@@ -49,6 +49,8 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
             killSwitchOracle.interface.decodeFunctionResult('oracleThresholds', multicallResults[1])[0].toString(),
         )
         const triggered = killSwitchOracle.interface.decodeFunctionResult('triggered', multicallResults[2])[0]
+
+        multicallResults = multicallResults.slice(3)
 
         if (!triggered && latestAnswer > 0 && latestAnswer <= threshold) {
             return {
