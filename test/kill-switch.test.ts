@@ -2,10 +2,11 @@ import hre from 'hardhat'
 import { expect } from 'chai'
 import { Contract } from '@ethersproject/contracts'
 import { Web3FunctionHardhat } from '@gelatonetwork/web3-functions-sdk/hardhat-plugin'
+import { Web3FunctionResultCallData } from '@gelatonetwork/web3-functions-sdk/*'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
-import { SnapshotRestorer, takeSnapshot } from '@nomicfoundation/hardhat-network-helpers'
+import { SnapshotRestorer, impersonateAccount, takeSnapshot } from '@nomicfoundation/hardhat-network-helpers'
 
-import { multicallAbi } from '../abis'
+import { killSwitchOracleAbi, oracleAbi } from '../abis'
 import { addresses } from '../utils'
 
 const { w3f, ethers } = hre
@@ -19,14 +20,26 @@ describe.only('KillSwitch', function () {
     let reader: SignerWithAddress
     let keeper: SignerWithAddress
 
-    let multicall: Contract
+    let wbtcOracle: Contract
+    let arbOracle: Contract
+
+    let wbtcOracleLatestAnswer: bigint
+    let arbOracleLatestAnswer: bigint
+
+    const wbtcOracleAddress = '0xF4030086522a5bEEa4988F8cA5B36dbC97BeE88c' as const
+    const arbOracleAddress = '0x31697852a68433DbCc2Ff612c516d69E3D9bd08F' as const
+    const killSwitchOwnerAddress = '0x3300f198988e4C9C63F75dF86De36421f06af8c4' as const
 
     before(async () => {
         ;[reader, keeper] = await ethers.getSigners()
 
         killSwitchW3F = w3f.get('kill-switch')
 
-        multicall = new Contract(addresses.mainnet.multicall, multicallAbi, reader)
+        wbtcOracle = new Contract(wbtcOracleAddress, oracleAbi, reader)
+        arbOracle = new Contract(arbOracleAddress, oracleAbi, reader)
+
+        wbtcOracleLatestAnswer = BigInt((await wbtcOracle.latestAnswer()).toString())
+        arbOracleLatestAnswer = BigInt((await arbOracle.latestAnswer()).toString())
     })
 
     beforeEach(async () => {
@@ -45,25 +58,71 @@ describe.only('KillSwitch', function () {
         !result.canExec && expect(result.message).to.equal('No oracles met threshold')
     })
 
-    it.skip('one oracle meets the threshold', async () => {
-        // Add a new oracle to the kill switch oracle contract with threshold under the price
+    it('one oracle meets the threshold', async () => {
+        await impersonateAccount(killSwitchOwnerAddress)
+        const owner = await hre.ethers.getSigner(killSwitchOwnerAddress)
+
+        const killSwitchOracle = new Contract(addresses.mainnet.killSwitchOracle, killSwitchOracleAbi, owner)
+        await killSwitchOracle.setOracle(arbOracleAddress, arbOracleLatestAnswer - BigInt(1)) // NOT meeting the threshold
+        await killSwitchOracle.setOracle(wbtcOracleAddress, wbtcOracleLatestAnswer) // meeting the threshold
 
         const { result } = await killSwitchW3F.run('onRun')
 
         expect(result.canExec).to.equal(true)
 
-        // Check that returned calldata matches desired calldata (call KSO with the new oracle address)
-        // Execute the call, check that the state of the KSO was changed to triggered
+        if (!result.canExec) {
+            throw ''
+        }
+        const callData = result.callData as Web3FunctionResultCallData[]
+
+        expect(callData).to.deep.equal([
+            {
+                to: addresses.mainnet.killSwitchOracle,
+                data: killSwitchOracle.interface.encodeFunctionData('trigger', [wbtcOracleAddress]),
+            },
+        ])
+
+        expect(await killSwitchOracle.triggered()).to.be.false
+
+        await keeper.sendTransaction({
+            to: callData[0].to,
+            data: callData[0].data,
+        })
+
+        expect(await killSwitchOracle.triggered()).to.be.true
     })
 
-    it.skip('multiple oracles meet the threshold', async () => {
-        // Add two new oracles to the kill switch oracle contract with threshold under the price
+    it('multiple oracles meet the threshold', async () => {
+        await impersonateAccount(killSwitchOwnerAddress)
+        const owner = await hre.ethers.getSigner(killSwitchOwnerAddress)
+
+        const killSwitchOracle = new Contract(addresses.mainnet.killSwitchOracle, killSwitchOracleAbi, owner)
+        await killSwitchOracle.setOracle(arbOracleAddress, arbOracleLatestAnswer) // meeting the threshold
+        await killSwitchOracle.setOracle(wbtcOracleAddress, wbtcOracleLatestAnswer) // meeting the threshold
 
         const { result } = await killSwitchW3F.run('onRun')
 
         expect(result.canExec).to.equal(true)
 
-        // Check that returned calldata matches desired calldata (call KSO with the first of the new oracles address)
-        // Execute the call, check that the state of the KSO was changed to triggered
+        if (!result.canExec) {
+            throw ''
+        }
+        const callData = result.callData as Web3FunctionResultCallData[]
+
+        expect(callData).to.deep.equal([
+            {
+                to: addresses.mainnet.killSwitchOracle,
+                data: killSwitchOracle.interface.encodeFunctionData('trigger', [arbOracleAddress]),
+            },
+        ])
+
+        expect(await killSwitchOracle.triggered()).to.be.false
+
+        await keeper.sendTransaction({
+            to: callData[0].to,
+            data: callData[0].data,
+        })
+
+        expect(await killSwitchOracle.triggered()).to.be.true
     })
 })
