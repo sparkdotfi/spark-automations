@@ -20,14 +20,9 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
     const lastForwardedPotData = await forwarder.getLastSeenPotData()
     const currentDsr = await pot.dsr()
 
-    console.log(BigInt(lastForwardedPotData.rho))
-    console.log(BigInt(Math.floor(new Date().getTime() / 1000)))
-    console.log(maxDelta)
-
-
     if (
         BigInt(lastForwardedPotData.dsr) == BigInt(currentDsr)
-        && block.timestamp < potData.rho + maxDelta
+        && BigInt(Math.floor(new Date().getTime() / 1000)) < BigInt(lastForwardedPotData.rho) + maxDelta
     ) {
         return {
             canExec: false,
