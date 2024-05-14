@@ -6,6 +6,7 @@ export const addresses = {
         killSwitchOracle: '0x909A86f78e1cdEd68F9c2Fe2c9CD922c401abe82',
         multicall: '0xeefBa1e63905eF1D7ACbA5a8513c70307C1cE441',
         pool: '0xC13e21B648A5Ee794902342038FF3aDAB66BE987',
+        pot: '0x197E90f9FAD81970bA7976f33CbD77088E5D7cf7',
         protocolDataProvider: '0xFc21d6d146E6086B8359705C8b28512a983db0cb',
         vat: '0x35D1b3F3D7966A1DFe207aa4514C12a259A0492B',
         wbtc: '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599',

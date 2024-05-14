@@ -11,7 +11,7 @@ import { addresses } from '../utils'
 
 const { w3f, ethers } = hre
 
-describe.only('KillSwitch', function () {
+describe('KillSwitch', function () {
     this.timeout(0)
 
     let snapshotRestorer: SnapshotRestorer
