@@ -49,6 +49,7 @@ const config: HardhatUserConfig = {
                 url: `https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_ID}`,
                 blockNumber: 19660800, // 2024-04-15 12:06:23
             },
+            allowBlocksWithSameTimestamp: true
         },
         // localhost: {
         //   url: 'http://localhost:8545',
