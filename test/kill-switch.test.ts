@@ -63,8 +63,8 @@ describe('KillSwitch', function () {
         const owner = await hre.ethers.getSigner(killSwitchOwnerAddress)
 
         const killSwitchOracle = new Contract(addresses.mainnet.killSwitchOracle, killSwitchOracleAbi, owner)
-        await killSwitchOracle.setOracle(arbOracleAddress, arbOracleLatestAnswer - BigInt(1)) // NOT meeting the threshold
-        await killSwitchOracle.setOracle(wbtcOracleAddress, wbtcOracleLatestAnswer) // meeting the threshold
+        await killSwitchOracle.setOracle(arbOracleAddress, arbOracleLatestAnswer - BigInt(1)) // NOT meeting the threshold to call
+        await killSwitchOracle.setOracle(wbtcOracleAddress, wbtcOracleLatestAnswer) // meeting the threshold to call
 
         const { result } = await killSwitchW3F.run('onRun')
 
@@ -97,8 +97,8 @@ describe('KillSwitch', function () {
         const owner = await hre.ethers.getSigner(killSwitchOwnerAddress)
 
         const killSwitchOracle = new Contract(addresses.mainnet.killSwitchOracle, killSwitchOracleAbi, owner)
-        await killSwitchOracle.setOracle(arbOracleAddress, arbOracleLatestAnswer) // meeting the threshold
-        await killSwitchOracle.setOracle(wbtcOracleAddress, wbtcOracleLatestAnswer) // meeting the threshold
+        await killSwitchOracle.setOracle(arbOracleAddress, arbOracleLatestAnswer) // meeting the threshold to call
+        await killSwitchOracle.setOracle(wbtcOracleAddress, wbtcOracleLatestAnswer) // meeting the threshold to call
 
         const { result } = await killSwitchW3F.run('onRun')
 
