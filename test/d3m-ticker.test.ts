@@ -31,14 +31,13 @@ describe('d3mTicker', function () {
 
     before(async () => {
         cleanStateRestorer = await takeSnapshot()
-
         ;[reader, keeper] = await ethers.getSigners()
 
         d3mTickerW3F = w3f.get('d3m-ticker')
 
         d3mHub = new Contract(addresses.mainnet.d3mHub, d3mHubAbi, reader)
         vat = new Contract(addresses.mainnet.vat, vatAbi, reader)
-})
+    })
 
     beforeEach(async () => {
         snapshotRestorer = await takeSnapshot()

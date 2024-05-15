@@ -27,19 +27,18 @@ describe.only('xchainOracleTicker', function () {
     let pot: Contract
 
     let userArgs = {
-        "forwarder": "0x4042127DecC0cF7cc0966791abebf7F76294DeF3",
-        "maxDelta": "10000000",
-        "gasLimit": "8000000",
-        "isBridgingArbitrumStyle": false,
-        "maxFeePerGas": "0",
-        "baseFee": "0"
+        forwarder: '0x4042127DecC0cF7cc0966791abebf7F76294DeF3',
+        maxDelta: '10000000',
+        gasLimit: '8000000',
+        isBridgingArbitrumStyle: false,
+        maxFeePerGas: '0',
+        baseFee: '0',
     }
 
     const newDsr = BigInt('1000000001585489599188229325')
 
     before(async () => {
         cleanStateRestorer = await takeSnapshot()
-
         ;[reader, keeper] = await ethers.getSigners()
         await impersonateAccount(addresses.mainnet.pauseProxy)
         pauseProxy = await ethers.getSigner(addresses.mainnet.pauseProxy)
@@ -80,7 +79,7 @@ describe.only('xchainOracleTicker', function () {
                 ethers.utils.formatBytes32String('dsr'),
                 newDsr,
             ]),
-            gasLimit: 10000000
+            gasLimit: 10000000,
         })
 
         const { result } = await xchainOracleTickerW3F.run('onRun', { userArgs })
@@ -112,10 +111,12 @@ describe.only('xchainOracleTicker', function () {
     })
 
     it('refresh is needed (stale rho)', async () => {
-        const { result } = await xchainOracleTickerW3F.run('onRun', { userArgs: {
-            ...userArgs,
-            maxDelta: '1000'
-        } })
+        const { result } = await xchainOracleTickerW3F.run('onRun', {
+            userArgs: {
+                ...userArgs,
+                maxDelta: '1000',
+            },
+        })
 
         expect(result.canExec).to.equal(true)
 
@@ -148,12 +149,12 @@ describe.only('xchainOracleTicker', function () {
     describe('arbitrum style', () => {
         before(async () => {
             userArgs = {
-                "forwarder": "0x7F36E7F562Ee3f320644F6031e03E12a02B85799",
-                "maxDelta": "10000000",
-                "gasLimit": "8000000",
-                "isBridgingArbitrumStyle": true,
-                "maxFeePerGas": "20000000000",
-                "baseFee": "20000000000"
+                forwarder: '0x7F36E7F562Ee3f320644F6031e03E12a02B85799',
+                maxDelta: '10000000',
+                gasLimit: '8000000',
+                isBridgingArbitrumStyle: true,
+                maxFeePerGas: '20000000000',
+                baseFee: '20000000000',
             }
         })
 
@@ -168,7 +169,7 @@ describe.only('xchainOracleTicker', function () {
                     ethers.utils.formatBytes32String('dsr'),
                     newDsr,
                 ]),
-                gasLimit: 10000000
+                gasLimit: 10000000,
             })
 
             const { result } = await xchainOracleTickerW3F.run('onRun', { userArgs })
@@ -183,7 +184,11 @@ describe.only('xchainOracleTicker', function () {
             expect(callData).to.deep.equal([
                 {
                     to: userArgs.forwarder,
-                    data: forwarder.interface.encodeFunctionData('refresh', [userArgs.gasLimit, userArgs.maxFeePerGas, userArgs.baseFee]),
+                    data: forwarder.interface.encodeFunctionData('refresh', [
+                        userArgs.gasLimit,
+                        userArgs.maxFeePerGas,
+                        userArgs.baseFee,
+                    ]),
                 },
             ])
 
@@ -200,10 +205,12 @@ describe.only('xchainOracleTicker', function () {
         })
 
         it('refresh is needed (stale rho)', async () => {
-            const { result } = await xchainOracleTickerW3F.run('onRun', { userArgs: {
-                ...userArgs,
-                maxDelta: '1000'
-            } })
+            const { result } = await xchainOracleTickerW3F.run('onRun', {
+                userArgs: {
+                    ...userArgs,
+                    maxDelta: '1000',
+                },
+            })
 
             expect(result.canExec).to.equal(true)
 
@@ -215,7 +222,11 @@ describe.only('xchainOracleTicker', function () {
             expect(callData).to.deep.equal([
                 {
                     to: userArgs.forwarder,
-                    data: forwarder.interface.encodeFunctionData('refresh', [userArgs.gasLimit, userArgs.maxFeePerGas, userArgs.baseFee]),
+                    data: forwarder.interface.encodeFunctionData('refresh', [
+                        userArgs.gasLimit,
+                        userArgs.maxFeePerGas,
+                        userArgs.baseFee,
+                    ]),
                 },
             ])
 

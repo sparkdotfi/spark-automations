@@ -21,8 +21,8 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
     const currentDsr = await pot.dsr()
 
     if (
-        BigInt(lastForwardedPotData.dsr) == BigInt(currentDsr)
-        && BigInt(Math.floor(new Date().getTime() / 1000)) < BigInt(lastForwardedPotData.rho) + maxDelta
+        BigInt(lastForwardedPotData.dsr) == BigInt(currentDsr) &&
+        BigInt(Math.floor(new Date().getTime() / 1000)) < BigInt(lastForwardedPotData.rho) + maxDelta
     ) {
         return {
             canExec: false,
