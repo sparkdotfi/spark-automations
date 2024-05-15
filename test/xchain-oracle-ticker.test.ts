@@ -146,8 +146,91 @@ describe.only('xchainOracleTicker', function () {
     })
 
     describe('arbitrum style', () => {
-        it.skip('refresh is needed (dsr updated)', async () => {})
+        before(async () => {
+            userArgs = {
+                "forwarder": "0x7F36E7F562Ee3f320644F6031e03E12a02B85799",
+                "maxDelta": "10000000",
+                "gasLimit": "8000000",
+                "isBridgingArbitrumStyle": true,
+                "maxFeePerGas": "20000000000",
+                "baseFee": "20000000000"
+            }
+        })
 
-        it.skip('refresh is needed (stale rho)', async () => {})
+        it('refresh is needed (dsr updated)', async () => {
+            // both drip and file need to be called at the same timestamp
+            await pot.drip()
+            const timestamp = (await pot.provider.getBlock('latest')).timestamp
+            await time.setNextBlockTimestamp(timestamp)
+            await pauseProxy.sendTransaction({
+                to: pot.address,
+                data: pot.interface.encodeFunctionData('file(bytes32,uint256)', [
+                    ethers.utils.formatBytes32String('dsr'),
+                    newDsr,
+                ]),
+                gasLimit: 10000000
+            })
+
+            const { result } = await xchainOracleTickerW3F.run('onRun', { userArgs })
+
+            expect(result.canExec).to.equal(true)
+
+            if (!result.canExec) {
+                throw ''
+            }
+            const callData = result.callData as Web3FunctionResultCallData[]
+
+            expect(callData).to.deep.equal([
+                {
+                    to: userArgs.forwarder,
+                    data: forwarder.interface.encodeFunctionData('refresh', [userArgs.gasLimit, userArgs.maxFeePerGas, userArgs.baseFee]),
+                },
+            ])
+
+            const dsrBefore = (await forwarder.getLastSeenPotData()).dsr
+            expect(dsrBefore).to.not.equal(newDsr)
+
+            await keeper.sendTransaction({
+                to: callData[0].to,
+                data: callData[0].data,
+            })
+
+            const dsrAfter = (await forwarder.getLastSeenPotData()).dsr
+            expect(dsrAfter).to.equal(newDsr)
+        })
+
+        it('refresh is needed (stale rho)', async () => {
+            const { result } = await xchainOracleTickerW3F.run('onRun', { userArgs: {
+                ...userArgs,
+                maxDelta: '1000'
+            } })
+
+            expect(result.canExec).to.equal(true)
+
+            if (!result.canExec) {
+                throw ''
+            }
+            const callData = result.callData as Web3FunctionResultCallData[]
+
+            expect(callData).to.deep.equal([
+                {
+                    to: userArgs.forwarder,
+                    data: forwarder.interface.encodeFunctionData('refresh', [userArgs.gasLimit, userArgs.maxFeePerGas, userArgs.baseFee]),
+                },
+            ])
+
+            const potRho = (await pot.rho()).toNumber()
+            const rhoBefore = (await forwarder.getLastSeenPotData()).rho
+
+            await keeper.sendTransaction({
+                to: callData[0].to,
+                data: callData[0].data,
+            })
+
+            const rhoAfter = (await forwarder.getLastSeenPotData()).rho
+
+            expect(rhoBefore).to.be.lessThan(potRho)
+            expect(rhoAfter).to.equal(potRho)
+        })
     })
 })
