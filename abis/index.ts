@@ -1,5 +1,7 @@
 export { default as capAutomatorAbi } from './capAutomator.json'
+export { default as d3mHubAbi } from './d3mHub.json'
 export { default as erc20Abi } from './erc20.json'
 export { default as multicallAbi } from './multicall.json'
 export { default as poolAbi } from './pool.json'
 export { default as protocolDataProviderAbi } from './protocolDataProvider.json'
+export { default as vatAbi } from './vat.json'

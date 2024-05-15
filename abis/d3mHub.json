@@ -1,0 +1,15 @@
+[
+    {
+        "inputs": [
+            {
+                "internalType": "bytes32",
+                "name": "ilk",
+                "type": "bytes32"
+            }
+        ],
+        "name": "exec",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    }
+]
