@@ -14,6 +14,7 @@ const { w3f, ethers } = hre
 describe('KillSwitch', function () {
     this.timeout(0)
 
+    let cleanStateRestorer: SnapshotRestorer
     let snapshotRestorer: SnapshotRestorer
 
     let killSwitchW3F: Web3FunctionHardhat
@@ -31,6 +32,8 @@ describe('KillSwitch', function () {
     const killSwitchOwnerAddress = '0x3300f198988e4C9C63F75dF86De36421f06af8c4' as const
 
     before(async () => {
+        cleanStateRestorer = await takeSnapshot()
+
         ;[reader, keeper] = await ethers.getSigners()
 
         killSwitchW3F = w3f.get('kill-switch')
@@ -50,6 +53,10 @@ describe('KillSwitch', function () {
         await snapshotRestorer.restore()
     })
 
+    after(async () => {
+        await cleanStateRestorer.restore()
+    })
+
     it('no oracles meet the threshold', async () => {
         // No thresholds are met at the forked state
         const { result } = await killSwitchW3F.run('onRun')
@@ -63,8 +70,8 @@ describe('KillSwitch', function () {
         const owner = await hre.ethers.getSigner(killSwitchOwnerAddress)
 
         const killSwitchOracle = new Contract(addresses.mainnet.killSwitchOracle, killSwitchOracleAbi, owner)
-        await killSwitchOracle.setOracle(arbOracleAddress, arbOracleLatestAnswer - BigInt(1)) // NOT meeting the threshold
-        await killSwitchOracle.setOracle(wbtcOracleAddress, wbtcOracleLatestAnswer) // meeting the threshold
+        await killSwitchOracle.setOracle(arbOracleAddress, arbOracleLatestAnswer - BigInt(1)) // NOT meeting the threshold to call
+        await killSwitchOracle.setOracle(wbtcOracleAddress, wbtcOracleLatestAnswer) // meeting the threshold to call
 
         const { result } = await killSwitchW3F.run('onRun')
 
@@ -97,8 +104,8 @@ describe('KillSwitch', function () {
         const owner = await hre.ethers.getSigner(killSwitchOwnerAddress)
 
         const killSwitchOracle = new Contract(addresses.mainnet.killSwitchOracle, killSwitchOracleAbi, owner)
-        await killSwitchOracle.setOracle(arbOracleAddress, arbOracleLatestAnswer) // meeting the threshold
-        await killSwitchOracle.setOracle(wbtcOracleAddress, wbtcOracleLatestAnswer) // meeting the threshold
+        await killSwitchOracle.setOracle(arbOracleAddress, arbOracleLatestAnswer) // meeting the threshold to call
+        await killSwitchOracle.setOracle(wbtcOracleAddress, wbtcOracleLatestAnswer) // meeting the threshold to call
 
         const { result } = await killSwitchW3F.run('onRun')
 

@@ -14,6 +14,7 @@ const { w3f, ethers } = hre
 describe('CapAutomator', function () {
     this.timeout(0)
 
+    let cleanStateRestorer: SnapshotRestorer
     let snapshotRestorer: SnapshotRestorer
 
     let capAutomatorW3F: Web3FunctionHardhat
@@ -83,6 +84,8 @@ describe('CapAutomator', function () {
         `0x6bb6126e000000000000000000000000${assetAddress.slice(2).toLocaleLowerCase()}`
 
     before(async () => {
+        cleanStateRestorer = await takeSnapshot()
+
         capAutomatorW3F = w3f.get('cap-automator')
         await capAutomatorW3F.run('onRun', { userArgs })
         ;[reader, keeper] = await ethers.getSigners()
@@ -106,6 +109,10 @@ describe('CapAutomator', function () {
 
     afterEach(async () => {
         await snapshotRestorer.restore()
+    })
+
+    after(async () => {
+        await cleanStateRestorer.restore()
     })
 
     it('no cap updates are required', async () => {
