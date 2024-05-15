@@ -14,6 +14,7 @@ const { w3f, ethers } = hre
 describe('KillSwitch', function () {
     this.timeout(0)
 
+    let cleanStateRestorer: SnapshotRestorer
     let snapshotRestorer: SnapshotRestorer
 
     let killSwitchW3F: Web3FunctionHardhat
@@ -31,6 +32,8 @@ describe('KillSwitch', function () {
     const killSwitchOwnerAddress = '0x3300f198988e4C9C63F75dF86De36421f06af8c4' as const
 
     before(async () => {
+        cleanStateRestorer = await takeSnapshot()
+
         ;[reader, keeper] = await ethers.getSigners()
 
         killSwitchW3F = w3f.get('kill-switch')
@@ -48,6 +51,10 @@ describe('KillSwitch', function () {
 
     afterEach(async () => {
         await snapshotRestorer.restore()
+    })
+
+    after(async () => {
+        await cleanStateRestorer.restore()
     })
 
     it('no oracles meet the threshold', async () => {
