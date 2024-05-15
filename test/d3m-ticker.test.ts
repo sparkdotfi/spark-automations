@@ -14,6 +14,7 @@ const { w3f, ethers } = hre
 describe('d3mTicker', function () {
     this.timeout(0)
 
+    let cleanStateRestorer: SnapshotRestorer
     let snapshotRestorer: SnapshotRestorer
 
     let d3mTickerW3F: Web3FunctionHardhat
@@ -21,44 +22,23 @@ describe('d3mTicker', function () {
     let keeper: SignerWithAddress
 
     let d3mHub: Contract
-    let multicall: Contract
     let vat: Contract
 
-    let artDifferenceOnTheFork: bigint
-
     let threshold: string
-    let userArgs = { threshold: 0, performGasCheck: false }
+
+    const userArgs = { threshold: 0, performGasCheck: false }
+    const artDifferenceOnTheFork = BigInt('39251752729492571136935')
 
     before(async () => {
+        cleanStateRestorer = await takeSnapshot()
+
         ;[reader, keeper] = await ethers.getSigners()
 
         d3mTickerW3F = w3f.get('d3m-ticker')
 
         d3mHub = new Contract(addresses.mainnet.d3mHub, d3mHubAbi, reader)
-        multicall = new Contract(addresses.mainnet.multicall, multicallAbi, reader)
         vat = new Contract(addresses.mainnet.vat, vatAbi, reader)
-
-        const [, artBefore] = await vat.urns(ilk, addresses.mainnet.d3mPool)
-
-        const [, artAfterData] = (
-            await multicall.callStatic.aggregate([
-                {
-                    target: addresses.mainnet.d3mHub,
-                    callData: d3mHub.interface.encodeFunctionData('exec', [ilk]),
-                },
-                {
-                    target: addresses.mainnet.vat,
-                    callData: vat.interface.encodeFunctionData('urns', [ilk, addresses.mainnet.d3mPool]),
-                },
-            ])
-        ).returnData
-        const artAfter = vat.interface.decodeFunctionResult('urns', artAfterData).art
-
-        artDifferenceOnTheFork =
-            BigInt(artBefore) > BigInt(artAfter)
-                ? BigInt(artBefore) - BigInt(artAfter)
-                : BigInt(artAfter) - BigInt(artBefore)
-    })
+})
 
     beforeEach(async () => {
         snapshotRestorer = await takeSnapshot()
@@ -66,6 +46,10 @@ describe('d3mTicker', function () {
 
     afterEach(async () => {
         await snapshotRestorer.restore()
+    })
+
+    after(async () => {
+        await cleanStateRestorer.restore()
     })
 
     it('threshold is not met', async () => {
