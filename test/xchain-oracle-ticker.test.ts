@@ -14,7 +14,9 @@ const { w3f, ethers } = hre
 describe.only('xchainOracleTicker', function () {
     this.timeout(0)
 
+    let cleanStateRestorer: SnapshotRestorer
     let snapshotRestorer: SnapshotRestorer
+
     let keeper: SignerWithAddress
     let pauseProxy: SignerWithAddress
     let reader: SignerWithAddress
@@ -36,6 +38,8 @@ describe.only('xchainOracleTicker', function () {
     const newDsr = BigInt('1000000001585489599188229325')
 
     before(async () => {
+        cleanStateRestorer = await takeSnapshot()
+
         ;[reader, keeper] = await ethers.getSigners()
         await impersonateAccount(addresses.mainnet.pauseProxy)
         pauseProxy = await ethers.getSigner(addresses.mainnet.pauseProxy)
@@ -52,6 +56,10 @@ describe.only('xchainOracleTicker', function () {
 
     afterEach(async () => {
         await snapshotRestorer.restore()
+    })
+
+    after(async () => {
+        await cleanStateRestorer.restore()
     })
 
     it('no refreshes needed', async () => {
