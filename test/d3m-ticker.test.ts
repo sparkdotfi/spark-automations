@@ -31,7 +31,6 @@ describe('d3mTicker', function () {
 
     before(async () => {
         cleanStateRestorer = await takeSnapshot()
-
         ;[reader, keeper] = await ethers.getSigners()
 
         d3mTickerW3F = w3f.get('d3m-ticker')
