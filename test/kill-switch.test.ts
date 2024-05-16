@@ -33,6 +33,7 @@ describe('KillSwitch', function () {
 
     before(async () => {
         cleanStateRestorer = await takeSnapshot()
+
         ;[reader, keeper] = await ethers.getSigners()
 
         killSwitchW3F = w3f.get('kill-switch')
