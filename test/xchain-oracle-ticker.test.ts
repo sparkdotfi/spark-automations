@@ -80,7 +80,6 @@ describe('xchainOracleTicker', function () {
                 ethers.utils.formatBytes32String('dsr'),
                 newDsr,
             ]),
-            gasLimit: 10000000,
         })
 
         const { result } = await xchainOracleTickerW3F.run('onRun', { userArgs })
