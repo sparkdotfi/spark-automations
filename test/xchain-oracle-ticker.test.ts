@@ -6,12 +6,12 @@ import { Web3FunctionHardhat } from '@gelatonetwork/web3-functions-sdk/hardhat-p
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { SnapshotRestorer, impersonateAccount, takeSnapshot, time } from '@nomicfoundation/hardhat-network-helpers'
 
-import { forwarderAbi, multicallAbi, potAbi } from '../abis'
+import { forwarderAbi, forwarderArbitrumAbi, potAbi } from '../abis'
 import { addresses } from '../utils'
 
 const { w3f, ethers } = hre
 
-describe.only('xchainOracleTicker', function () {
+describe('xchainOracleTicker', function () {
     this.timeout(0)
 
     let cleanStateRestorer: SnapshotRestorer
@@ -24,6 +24,7 @@ describe.only('xchainOracleTicker', function () {
     let xchainOracleTickerW3F: Web3FunctionHardhat
 
     let forwarder: Contract
+    let forwarderArbitrum: Contract
     let pot: Contract
 
     let userArgs = {
@@ -151,11 +152,12 @@ describe.only('xchainOracleTicker', function () {
             userArgs = {
                 forwarder: '0x7F36E7F562Ee3f320644F6031e03E12a02B85799',
                 maxDelta: '10000000',
-                gasLimit: '8000000',
+                gasLimit: '200000',
                 isBridgingArbitrumStyle: true,
-                maxFeePerGas: '20000000000',
+                maxFeePerGas: '30000000000',
                 baseFee: '20000000000',
             }
+            forwarderArbitrum = new Contract(userArgs.forwarder, forwarderArbitrumAbi, reader)
         })
 
         it('refresh is needed (dsr updated)', async () => {
@@ -184,7 +186,7 @@ describe.only('xchainOracleTicker', function () {
             expect(callData).to.deep.equal([
                 {
                     to: userArgs.forwarder,
-                    data: forwarder.interface.encodeFunctionData('refresh', [
+                    data: forwarderArbitrum.interface.encodeFunctionData('refresh', [
                         userArgs.gasLimit,
                         userArgs.maxFeePerGas,
                         userArgs.baseFee,
@@ -192,15 +194,17 @@ describe.only('xchainOracleTicker', function () {
                 },
             ])
 
-            const dsrBefore = (await forwarder.getLastSeenPotData()).dsr
+            const dsrBefore = (await forwarderArbitrum.getLastSeenPotData()).dsr
             expect(dsrBefore).to.not.equal(newDsr)
+
 
             await keeper.sendTransaction({
                 to: callData[0].to,
                 data: callData[0].data,
+                value: BigInt('1000000000000000000')
             })
 
-            const dsrAfter = (await forwarder.getLastSeenPotData()).dsr
+            const dsrAfter = (await forwarderArbitrum.getLastSeenPotData()).dsr
             expect(dsrAfter).to.equal(newDsr)
         })
 
@@ -222,7 +226,7 @@ describe.only('xchainOracleTicker', function () {
             expect(callData).to.deep.equal([
                 {
                     to: userArgs.forwarder,
-                    data: forwarder.interface.encodeFunctionData('refresh', [
+                    data: forwarderArbitrum.interface.encodeFunctionData('refresh', [
                         userArgs.gasLimit,
                         userArgs.maxFeePerGas,
                         userArgs.baseFee,
@@ -231,14 +235,15 @@ describe.only('xchainOracleTicker', function () {
             ])
 
             const potRho = (await pot.rho()).toNumber()
-            const rhoBefore = (await forwarder.getLastSeenPotData()).rho
+            const rhoBefore = (await forwarderArbitrum.getLastSeenPotData()).rho
 
             await keeper.sendTransaction({
                 to: callData[0].to,
                 data: callData[0].data,
+                value: BigInt('1000000000000000000')
             })
 
-            const rhoAfter = (await forwarder.getLastSeenPotData()).rho
+            const rhoAfter = (await forwarderArbitrum.getLastSeenPotData()).rho
 
             expect(rhoBefore).to.be.lessThan(potRho)
             expect(rhoAfter).to.equal(potRho)
