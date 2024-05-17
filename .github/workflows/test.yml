@@ -30,7 +30,7 @@ jobs:
       - name: Run linter
         run: yarn lint
 
-      - name: Test utils
+      - name: Run utils tests
         run: yarn test:utils
 
       - name: Run gnosis tests
