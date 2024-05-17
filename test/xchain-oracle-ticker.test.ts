@@ -197,11 +197,10 @@ describe('xchainOracleTicker', function () {
             const dsrBefore = (await forwarderArbitrum.getLastSeenPotData()).dsr
             expect(dsrBefore).to.not.equal(newDsr)
 
-
             await keeper.sendTransaction({
                 to: callData[0].to,
                 data: callData[0].data,
-                value: BigInt('1000000000000000000')
+                value: BigInt('1000000000000000000'),
             })
 
             const dsrAfter = (await forwarderArbitrum.getLastSeenPotData()).dsr
@@ -240,7 +239,7 @@ describe('xchainOracleTicker', function () {
             await keeper.sendTransaction({
                 to: callData[0].to,
                 data: callData[0].data,
-                value: BigInt('1000000000000000000')
+                value: BigInt('1000000000000000000'),
             })
 
             const rhoAfter = (await forwarderArbitrum.getLastSeenPotData()).rho
