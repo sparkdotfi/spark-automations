@@ -69,84 +69,92 @@ describe('xchainOracleTicker', function () {
         !result.canExec && expect(result.message).to.equal('Pot data refresh not needed')
     })
 
-    it('refresh is needed (dsr updated)', async () => {
-        // both drip and file need to be called at the same timestamp
-        await pot.drip()
-        const timestamp = (await pot.provider.getBlock('latest')).timestamp
-        await time.setNextBlockTimestamp(timestamp)
-        await pauseProxy.sendTransaction({
-            to: pot.address,
-            data: pot.interface.encodeFunctionData('file(bytes32,uint256)', [
-                ethers.utils.formatBytes32String('dsr'),
-                newDsr,
-            ]),
+    describe('default forwarder', () => {
+        it('refresh is needed (dsr updated)', async () => {
+            // both drip and file need to be called at the same timestamp
+            await pot.drip()
+            const timestamp = (await pot.provider.getBlock('latest')).timestamp
+            await time.setNextBlockTimestamp(timestamp)
+            await pauseProxy.sendTransaction({
+                to: pot.address,
+                data: pot.interface.encodeFunctionData('file(bytes32,uint256)', [
+                    ethers.utils.formatBytes32String('dsr'),
+                    newDsr,
+                ]),
+            })
+
+            const { result } = await xchainOracleTickerW3F.run('onRun', { userArgs })
+
+            expect(result.canExec).to.equal(true)
+
+            if (!result.canExec) {
+                throw ''
+            }
+            const callData = result.callData as Web3FunctionResultCallData[]
+
+            expect(callData).to.deep.equal([
+                {
+                    to: userArgs.forwarder,
+                    data: forwarder.interface.encodeFunctionData('refresh', [userArgs.gasLimit]),
+                },
+            ])
+
+            const dsrBefore = (await forwarder.getLastSeenPotData()).dsr
+            expect(dsrBefore).to.not.equal(newDsr)
+
+            await keeper.sendTransaction({
+                to: callData[0].to,
+                data: callData[0].data,
+            })
+
+            const dsrAfter = (await forwarder.getLastSeenPotData()).dsr
+            expect(dsrAfter).to.equal(newDsr)
         })
 
-        const { result } = await xchainOracleTickerW3F.run('onRun', { userArgs })
+        it('refresh is needed (stale rho)', async () => {
+            const maxDelta = (
+                Math.floor(new Date().getTime() / 1000) -
+                (await forwarder.getLastSeenPotData()).rho -
+                1
+            ).toString()
 
-        expect(result.canExec).to.equal(true)
+            const { result } = await xchainOracleTickerW3F.run('onRun', {
+                userArgs: {
+                    ...userArgs,
+                    maxDelta,
+                },
+            })
 
-        if (!result.canExec) {
-            throw ''
-        }
-        const callData = result.callData as Web3FunctionResultCallData[]
+            expect(result.canExec).to.equal(true)
 
-        expect(callData).to.deep.equal([
-            {
-                to: userArgs.forwarder,
-                data: forwarder.interface.encodeFunctionData('refresh', [userArgs.gasLimit]),
-            },
-        ])
+            if (!result.canExec) {
+                throw ''
+            }
+            const callData = result.callData as Web3FunctionResultCallData[]
 
-        const dsrBefore = (await forwarder.getLastSeenPotData()).dsr
-        expect(dsrBefore).to.not.equal(newDsr)
+            expect(callData).to.deep.equal([
+                {
+                    to: userArgs.forwarder,
+                    data: forwarder.interface.encodeFunctionData('refresh', [userArgs.gasLimit]),
+                },
+            ])
 
-        await keeper.sendTransaction({
-            to: callData[0].to,
-            data: callData[0].data,
+            const potRho = (await pot.rho()).toNumber()
+            const rhoBefore = (await forwarder.getLastSeenPotData()).rho
+
+            await keeper.sendTransaction({
+                to: callData[0].to,
+                data: callData[0].data,
+            })
+
+            const rhoAfter = (await forwarder.getLastSeenPotData()).rho
+
+            expect(rhoBefore).to.be.lessThan(potRho)
+            expect(rhoAfter).to.equal(potRho)
         })
-
-        const dsrAfter = (await forwarder.getLastSeenPotData()).dsr
-        expect(dsrAfter).to.equal(newDsr)
     })
 
-    it('refresh is needed (stale rho)', async () => {
-        const { result } = await xchainOracleTickerW3F.run('onRun', {
-            userArgs: {
-                ...userArgs,
-                maxDelta: '1000',
-            },
-        })
-
-        expect(result.canExec).to.equal(true)
-
-        if (!result.canExec) {
-            throw ''
-        }
-        const callData = result.callData as Web3FunctionResultCallData[]
-
-        expect(callData).to.deep.equal([
-            {
-                to: userArgs.forwarder,
-                data: forwarder.interface.encodeFunctionData('refresh', [userArgs.gasLimit]),
-            },
-        ])
-
-        const potRho = (await pot.rho()).toNumber()
-        const rhoBefore = (await forwarder.getLastSeenPotData()).rho
-
-        await keeper.sendTransaction({
-            to: callData[0].to,
-            data: callData[0].data,
-        })
-
-        const rhoAfter = (await forwarder.getLastSeenPotData()).rho
-
-        expect(rhoBefore).to.be.lessThan(potRho)
-        expect(rhoAfter).to.equal(potRho)
-    })
-
-    describe('arbitrum style', () => {
+    describe('arbitrum style forwarder', () => {
         before(async () => {
             userArgs = {
                 forwarder: '0x7F36E7F562Ee3f320644F6031e03E12a02B85799',
@@ -207,10 +215,16 @@ describe('xchainOracleTicker', function () {
         })
 
         it('refresh is needed (stale rho)', async () => {
+            const maxDelta = (
+                Math.floor(new Date().getTime() / 1000) -
+                (await forwarderArbitrum.getLastSeenPotData()).rho -
+                1
+            ).toString()
+
             const { result } = await xchainOracleTickerW3F.run('onRun', {
                 userArgs: {
                     ...userArgs,
-                    maxDelta: '1000',
+                    maxDelta,
                 },
             })
 
