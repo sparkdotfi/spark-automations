@@ -2,7 +2,11 @@ export const insistOnExecution = async (callToExecute: () => Promise<any>): Prom
     try {
         return await callToExecute()
     } catch (error) {
-        if ((error as any).message.includes('Transaction reverted without a reason')) {
+        const { message } = error as any
+        if (
+            message.includes('Transaction reverted without a reason') ||
+            message.includes('Transaction ran out of gas')
+        ) {
             return await insistOnExecution(callToExecute)
         } else {
             throw error
