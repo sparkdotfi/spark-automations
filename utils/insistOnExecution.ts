@@ -3,7 +3,6 @@ export const insistOnExecution = async (callToExecute: () => Promise<any>, callD
         return await callToExecute()
     } catch (error) {
         const { message } = error as any
-        console.log('retrying', callDepth)
 
         const messageHasAReasonToIgnore =
             message.includes('Transaction reverted without a reason') || message.includes('Transaction ran out of gas')
