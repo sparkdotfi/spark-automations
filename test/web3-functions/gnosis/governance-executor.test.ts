@@ -32,7 +32,6 @@ describe('GovernanceExecutor', function () {
     })
 
     it('no actions to execute', async () => {
-        // No thresholds are met at the forked state
         const { result } = await governanceExecutorW3F.run('onRun')
 
         expect(result.canExec).to.equal(false)
