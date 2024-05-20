@@ -72,7 +72,7 @@ describe('xchainOracleTicker', function () {
     const runForwarderTests = () => {
         it('refresh is needed (dsr updated)', async () => {
             // both drip and file need to be called at the same timestamp
-            await pot.drip()
+            await insistOnExecution(() => pot.drip())
             const timestamp = (await pot.provider.getBlock('latest')).timestamp
             await time.setNextBlockTimestamp(timestamp)
             await insistOnExecution(() => pauseProxy.sendTransaction({
