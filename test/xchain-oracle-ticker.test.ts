@@ -75,13 +75,15 @@ describe('xchainOracleTicker', function () {
             await insistOnExecution(() => pot.drip())
             const timestamp = (await pot.provider.getBlock('latest')).timestamp
             await time.setNextBlockTimestamp(timestamp)
-            await insistOnExecution(() => pauseProxy.sendTransaction({
-                to: pot.address,
-                data: pot.interface.encodeFunctionData('file(bytes32,uint256)', [
-                    ethers.utils.formatBytes32String('dsr'),
-                    newDsr,
-                ]),
-            }))
+            await insistOnExecution(() =>
+                pauseProxy.sendTransaction({
+                    to: pot.address,
+                    data: pot.interface.encodeFunctionData('file(bytes32,uint256)', [
+                        ethers.utils.formatBytes32String('dsr'),
+                        newDsr,
+                    ]),
+                }),
+            )
 
             const { result } = await xchainOracleTickerW3F.run('onRun', { userArgs })
 
@@ -102,10 +104,12 @@ describe('xchainOracleTicker', function () {
             const dsrBefore = (await forwarder.getLastSeenPotData()).dsr
             expect(dsrBefore).to.not.equal(newDsr)
 
-            await insistOnExecution(() => keeper.sendTransaction({
-                to: callData[0].to,
-                data: callData[0].data,
-            }))
+            await insistOnExecution(() =>
+                keeper.sendTransaction({
+                    to: callData[0].to,
+                    data: callData[0].data,
+                }),
+            )
 
             const dsrAfter = (await forwarder.getLastSeenPotData()).dsr
             expect(dsrAfter).to.equal(newDsr)
@@ -142,10 +146,12 @@ describe('xchainOracleTicker', function () {
             const potRho = (await pot.rho()).toNumber()
             const rhoBefore = (await forwarder.getLastSeenPotData()).rho
 
-            await insistOnExecution(() => keeper.sendTransaction({
-                to: callData[0].to,
-                data: callData[0].data,
-            }))
+            await insistOnExecution(() =>
+                keeper.sendTransaction({
+                    to: callData[0].to,
+                    data: callData[0].data,
+                }),
+            )
 
             const rhoAfter = (await forwarder.getLastSeenPotData()).rho
 
