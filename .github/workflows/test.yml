@@ -30,6 +30,9 @@ jobs:
       - name: Run linter
         run: yarn lint
 
+      - name: Run formatter
+        run: yarn format:check
+
       - name: Run utils tests
         run: yarn test:utils
 
