@@ -14,4 +14,8 @@ export const addresses = {
         weth: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
         wsteth: '0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0',
     },
+    gnosis: {
+        executor: '0xc4218C1127cB24a0D6c1e7D25dc34e10f2625f5A',
+        multicall: '0xcA11bde05977b3631167028862bE2a173976CA11',
+    },
 } as const

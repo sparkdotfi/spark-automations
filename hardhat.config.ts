@@ -65,6 +65,13 @@ const config: HardhatUserConfig = {
         hardhat: {
             forking,
             allowBlocksWithSameTimestamp: true,
+            chains: {
+                100: {
+                    hardforkHistory: {
+                        cancun: 33991690,
+                    },
+                },
+            },
         },
         // localhost: {
         //   url: 'http://localhost:8545',

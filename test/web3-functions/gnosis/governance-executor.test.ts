@@ -35,6 +35,6 @@ describe('GovernanceExecutor', function () {
         const { result } = await governanceExecutorW3F.run('onRun')
 
         expect(result.canExec).to.equal(false)
-        !result.canExec && expect(result.message).to.equal('Not implemented')
+        !result.canExec && expect(result.message).to.equal('No actions to execute')
     })
 })
