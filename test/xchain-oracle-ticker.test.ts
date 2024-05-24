@@ -116,25 +116,40 @@ describe('xchainOracleTicker', function () {
         })
 
         it('refresh is needed (stale rho)', async () => {
-            const maxDelta = (
-                Math.floor(new Date().getTime() / 1000) -
-                (await forwarder.getLastSeenPotData()).rho -
-                1
+            let maxDelta = (
+                Math.floor(new Date().getTime() / 1000)
+                - (await forwarder.getLastSeenPotData()).rho
+                + 1
             ).toString()
 
-            const { result } = await xchainOracleTickerW3F.run('onRun', {
+            const { result: negativeResult } = await xchainOracleTickerW3F.run('onRun', {
                 userArgs: {
                     ...userArgs,
                     maxDelta,
                 },
             })
 
-            expect(result.canExec).to.equal(true)
+            expect(negativeResult.canExec).to.equal(false)
 
-            if (!result.canExec) {
+            maxDelta = (
+                Math.floor(new Date().getTime() / 1000)
+                - (await forwarder.getLastSeenPotData()).rho
+                - 1
+            ).toString()
+
+            const { result: positiveResult } = await xchainOracleTickerW3F.run('onRun', {
+                userArgs: {
+                    ...userArgs,
+                    maxDelta,
+                },
+            })
+
+            expect(positiveResult.canExec).to.equal(true)
+
+            if (!positiveResult.canExec) {
                 throw ''
             }
-            const callData = result.callData as Web3FunctionResultCallData[]
+            const callData = positiveResult.callData as Web3FunctionResultCallData[]
 
             expect(callData).to.deep.equal([
                 {
