@@ -117,9 +117,9 @@ describe('xchainOracleTicker', function () {
 
         it('refresh is needed (stale rho)', async () => {
             let maxDelta = (
-                Math.floor(new Date().getTime() / 1000)
-                - (await forwarder.getLastSeenPotData()).rho
-                + 1
+                Math.floor(new Date().getTime() / 1000) -
+                (await forwarder.getLastSeenPotData()).rho +
+                1
             ).toString()
 
             const { result: negativeResult } = await xchainOracleTickerW3F.run('onRun', {
@@ -132,9 +132,9 @@ describe('xchainOracleTicker', function () {
             expect(negativeResult.canExec).to.equal(false)
 
             maxDelta = (
-                Math.floor(new Date().getTime() / 1000)
-                - (await forwarder.getLastSeenPotData()).rho
-                - 1
+                Math.floor(new Date().getTime() / 1000) -
+                (await forwarder.getLastSeenPotData()).rho -
+                1
             ).toString()
 
             const { result: positiveResult } = await xchainOracleTickerW3F.run('onRun', {
