@@ -14,30 +14,14 @@ interface IExecutor {
 }
 
 contract MockAMB {
-    address internal _executor;
-    address internal _messageSender;
-    bytes32 internal _messageSourceChainId;
+    address public executor;
+    address public messageSender;
+    bytes32 public messageSourceChainId;
 
-    constructor(address __executor) {
-        _executor = __executor;
-        _messageSourceChainId = IExecutor(__executor).chainId();
-        _messageSender = IExecutor(__executor).controller();
-    }
-
-    function messageSourceChainId() public view returns(bytes32) {
-        return _messageSourceChainId;
-    }
-
-    function messageSender() public view returns(address) {
-        return _messageSender;
-    }
-
-    function setMessageSourceChainId(bytes32 __messageSourceChainId) public {
-        _messageSourceChainId = __messageSourceChainId;
-    }
-
-    function setMessageSender(address __messageSender) public {
-        _messageSender = __messageSender;
+    constructor(address _executor) {
+        executor = _executor;
+        messageSourceChainId = IExecutor(_executor).chainId();
+        messageSender = IExecutor(_executor).controller();
     }
 
     function __callQueueOnExecutor(address _payload) public {
@@ -52,7 +36,7 @@ contract MockAMB {
         bool[] memory withDelegatecalls = new bool[](1);
         withDelegatecalls[0] = true;
 
-        IExecutor(_executor).queue(
+        IExecutor(executor).queue(
             targets,
             values,
             signatures,
