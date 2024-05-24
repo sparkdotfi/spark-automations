@@ -6,7 +6,7 @@
     "private": false,
     "scripts": {
         "build": "yarn clean && yarn install && yarn compile && npx tsc",
-        "compile": "npx hardhat compile --force",
+        "compile": "export TEST_NETWORK=\"_\" && npx hardhat compile --force",
         "clean": "rm -rf dist",
         "deploy": "npx hardhat deploy",
         "format": "prettier --check \"./**/*.{js,ts,tsx,json}\" README.md",

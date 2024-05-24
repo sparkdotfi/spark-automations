@@ -1,11 +1,16 @@
 import hre from 'hardhat'
 import chai from 'chai'
+import { Contract, ContractFactory } from '@ethersproject/contracts'
 import { Web3FunctionHardhat } from '@gelatonetwork/web3-functions-sdk/hardhat-plugin'
-import { SnapshotRestorer, takeSnapshot } from '@nomicfoundation/hardhat-network-helpers'
+import { Web3FunctionResultCallData } from '@gelatonetwork/web3-functions-sdk/*'
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
+import { SnapshotRestorer, impersonateAccount, mine, setBalance, takeSnapshot } from '@nomicfoundation/hardhat-network-helpers'
+import { gnosisGovernanceExecutorAbi } from '../../../abis'
+import { addresses } from '../../../utils'
 
 chai.use(require('chai-as-promised'))
 
-const { w3f } = hre
+const { w3f, ethers } = hre
 const { expect } = chai
 
 describe('GovernanceExecutor', function () {
@@ -15,9 +20,33 @@ describe('GovernanceExecutor', function () {
     let snapshotRestorer: SnapshotRestorer
 
     let governanceExecutorW3F: Web3FunctionHardhat
+    let keeper: SignerWithAddress
+
+    let payloadFactory: ContractFactory
+
+    let executor: Contract
+    let mockAMB: Contract
+
+    let executorAddress: string
+    let executionDelay: number
 
     before(async () => {
         cleanStateRestorer = await takeSnapshot()
+        ;[keeper] = await ethers.getSigners()
+
+        executorAddress = addresses.gnosis.executor
+
+        const mockAMBFactory = await ethers.getContractFactory('MockAMB')
+        mockAMB = await mockAMBFactory.deploy(executorAddress)
+
+        await setBalance(executorAddress, ethers.utils.parseEther('1'))
+        await impersonateAccount(executorAddress)
+        const executorSigner = await ethers.getSigner(executorAddress)
+        executor = new Contract(executorAddress, gnosisGovernanceExecutorAbi, executorSigner)
+        await executor.setAmb(mockAMB.address)
+        executionDelay = Number(await executor.getDelay())
+
+        payloadFactory = await ethers.getContractFactory('EmptyPayload')
 
         governanceExecutorW3F = w3f.get('governance-executor')
     })
@@ -47,32 +76,141 @@ describe('GovernanceExecutor', function () {
         )
     })
 
-    // In order to implement these we need to mock creation of the proposal by the bridge validators
-    // We need to deploy a payload, create a calldata telling the executor to execute the payload
-    ////////////////////////////////////////////////////////////////////////////////////////
-    // IValidatorContract validatorContract = IValidatorContract(L2_AMB_CROSS_DOMAIN_MESSENGER.validatorContract());
-    // address[] memory validators = validatorContract.validatorList();
-    // uint256 requiredSignatures = validatorContract.requiredSignatures();
-    // bytes memory messageToRelay = removeFirst64Bytes(log.data);
-    // for (uint256 i = 0; i < requiredSignatures; i++) {
-    //     vm.prank(validators[i]);
-    //     L2_AMB_CROSS_DOMAIN_MESSENGER.executeAffirmation(messageToRelay);
-    // }
-    ////////////////////////////////////////////////////////////////////////////////////////
+    it('does not execute actions when no actions are ready', async () => {
+        const payload = await payloadFactory.deploy()
+        await mockAMB.__callQueueOnExecutor(payload.address)
 
-    it.skip('does not execute actions when no actions are ready', async () => {
-        // create one proposal, but not enough time has passed
+        const { result } = await governanceExecutorW3F.run('onRun')
+
+        expect(result.canExec).to.equal(false)
+        !result.canExec && expect(result.message).to.equal('No actions to execute')
     })
 
-    it.skip('executes single proposal', async () => {
-        // create one proposal, execute correctly when it's ready
+    it('executes single proposal', async () => {
+        const payload = await payloadFactory.deploy()
+        await mockAMB.__callQueueOnExecutor(payload.address)
+
+        await mine(2, { interval: executionDelay - 1 })
+
+        const { result: negativeResult } = await governanceExecutorW3F.run('onRun')
+        expect(negativeResult.canExec).to.equal(false)
+
+        await mine(2, { interval: 1 })
+
+        const { result: positiveResult } = await governanceExecutorW3F.run('onRun')
+
+        expect(positiveResult.canExec).to.equal(true)
+
+        if (!positiveResult.canExec) {
+            throw ''
+        }
+        const callData = positiveResult.callData as Web3FunctionResultCallData[]
+
+        expect(callData).to.deep.equal([
+            {
+                to: executorAddress,
+                data: executor.interface.encodeFunctionData('execute', [4]),
+            },
+        ])
+
+        expect(await executor.getCurrentState(4)).to.equal(0)
+
+        await keeper.sendTransaction({
+            to: callData[0].to,
+            data: callData[0].data,
+        })
+
+        expect(await executor.getCurrentState(4)).to.equal(1)
     })
 
-    it.skip('executes single proposal (second in timelock)', async () => {
-        // create two proposals, execute one when it's ready, the second proposal awaiting
+    it('executes single proposal (second in timelock)', async () => {
+        const firstPayload = await payloadFactory.deploy()
+        const secondPayload = await payloadFactory.deploy()
+
+        await mockAMB.__callQueueOnExecutor(firstPayload.address)
+
+        await mine(2, { interval: executionDelay - 1 })
+
+        await mockAMB.__callQueueOnExecutor(secondPayload.address)
+
+        const { result: negativeResult } = await governanceExecutorW3F.run('onRun')
+        expect(negativeResult.canExec).to.equal(false)
+
+        await mine(2, { interval: 1 })
+
+        const { result: positiveResult } = await governanceExecutorW3F.run('onRun')
+
+        expect(positiveResult.canExec).to.equal(true)
+
+        if (!positiveResult.canExec) {
+            throw ''
+        }
+        const callData = positiveResult.callData as Web3FunctionResultCallData[]
+
+        expect(callData).to.deep.equal([
+            {
+                to: executorAddress,
+                data: executor.interface.encodeFunctionData('execute', [4]),
+            },
+        ])
+
+        expect(await executor.getCurrentState(4)).to.equal(0)
+
+        await keeper.sendTransaction({
+            to: callData[0].to,
+            data: callData[0].data,
+        })
+
+        expect(await executor.getCurrentState(4)).to.equal(1)
     })
 
-    it.skip('executes multiple proposal', async () => {
-        // create two proposals, execute both when they're' ready
+    it('executes multiple proposal', async () => {
+        const firstPayload = await payloadFactory.deploy()
+        const secondPayload = await payloadFactory.deploy()
+
+        await mockAMB.__callQueueOnExecutor(firstPayload.address)
+        await mockAMB.__callQueueOnExecutor(secondPayload.address)
+
+        await mine(2, { interval: executionDelay - 1 })
+
+        const { result: negativeResult } = await governanceExecutorW3F.run('onRun')
+        expect(negativeResult.canExec).to.equal(false)
+
+        await mine(2, { interval: 1 })
+
+        const { result: positiveResult } = await governanceExecutorW3F.run('onRun')
+
+        expect(positiveResult.canExec).to.equal(true)
+
+        if (!positiveResult.canExec) {
+            throw ''
+        }
+        const callData = positiveResult.callData as Web3FunctionResultCallData[]
+
+        expect(callData).to.deep.equal([
+            {
+                to: executorAddress,
+                data: executor.interface.encodeFunctionData('execute', [4]),
+            },
+            {
+                to: executorAddress,
+                data: executor.interface.encodeFunctionData('execute', [5]),
+            },
+        ])
+
+        expect(await executor.getCurrentState(4)).to.equal(0)
+        expect(await executor.getCurrentState(5)).to.equal(0)
+
+        await keeper.sendTransaction({
+            to: callData[0].to,
+            data: callData[0].data,
+        })
+        await keeper.sendTransaction({
+            to: callData[1].to,
+            data: callData[1].data,
+        })
+
+        expect(await executor.getCurrentState(4)).to.equal(1)
+        expect(await executor.getCurrentState(5)).to.equal(1)
     })
 })
