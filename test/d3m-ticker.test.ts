@@ -27,18 +27,17 @@ describe('d3mTicker', function () {
     let threshold: string
 
     const userArgs = { threshold: 0, performGasCheck: false }
-    const artDifferenceOnTheFork = BigInt('39251752729492571136935')
+    const artDifferenceOnTheFork = BigInt('1795463549442779292633096')
 
     before(async () => {
         cleanStateRestorer = await takeSnapshot()
-
         ;[reader, keeper] = await ethers.getSigners()
 
         d3mTickerW3F = w3f.get('d3m-ticker')
 
         d3mHub = new Contract(addresses.mainnet.d3mHub, d3mHubAbi, reader)
         vat = new Contract(addresses.mainnet.vat, vatAbi, reader)
-})
+    })
 
     beforeEach(async () => {
         snapshotRestorer = await takeSnapshot()

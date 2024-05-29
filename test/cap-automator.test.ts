@@ -7,7 +7,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { SnapshotRestorer, impersonateAccount, takeSnapshot, mine } from '@nomicfoundation/hardhat-network-helpers'
 
 import { capAutomatorAbi, erc20Abi, poolAbi, protocolDataProviderAbi } from '../abis'
-import { addresses } from '../utils'
+import { addresses, insistOnExecution } from '../utils'
 
 const { w3f, ethers } = hre
 
@@ -40,10 +40,10 @@ describe('CapAutomator', function () {
 
         const token = new Contract(tokenAddress, erc20Abi, signer)
 
-        await token.approve(addresses.mainnet.pool, amount)
+        await insistOnExecution(() => token.approve(addresses.mainnet.pool, amount))
 
         const pool = new Contract(addresses.mainnet.pool, poolAbi, signer)
-        await pool.supply(tokenAddress, amount, signerAddress, 0)
+        await insistOnExecution(() => pool.supply(tokenAddress, amount, signerAddress, 0))
     }
 
     const withdraw = async (signerAddress: string, tokenAddress: string, amount: BigInt) => {
@@ -51,7 +51,7 @@ describe('CapAutomator', function () {
         const signer = await hre.ethers.getSigner(signerAddress)
 
         const pool = new Contract(addresses.mainnet.pool, poolAbi, signer)
-        await pool.withdraw(tokenAddress, amount, signerAddress)
+        await insistOnExecution(() => pool.withdraw(tokenAddress, amount, signerAddress))
     }
 
     const borrow = async (signerAddress: string, tokenAddress: string, amount: BigInt) => {
@@ -59,7 +59,7 @@ describe('CapAutomator', function () {
         const signer = await hre.ethers.getSigner(signerAddress)
 
         const pool = new Contract(addresses.mainnet.pool, poolAbi, signer)
-        await pool.borrow(tokenAddress, amount, 2, 0, signerAddress)
+        await insistOnExecution(() => pool.borrow(tokenAddress, amount, 2, 0, signerAddress))
     }
 
     const repay = async (signerAddress: string, tokenAddress: string, amount: BigInt) => {
@@ -68,10 +68,10 @@ describe('CapAutomator', function () {
 
         const token = new Contract(tokenAddress, erc20Abi, signer)
 
-        await token.approve(addresses.mainnet.pool, amount)
+        await insistOnExecution(() => token.approve(addresses.mainnet.pool, amount))
 
         const pool = new Contract(addresses.mainnet.pool, poolAbi, signer)
-        await pool.repay(tokenAddress, amount, 2, signerAddress)
+        await insistOnExecution(() => pool.repay(tokenAddress, amount, 2, signerAddress))
     }
 
     const formatExecSupplyCallData = (assetAddress: string) =>
@@ -97,7 +97,7 @@ describe('CapAutomator', function () {
         sparkAssets = await pool.getReservesList()
 
         for (const assetAddress of sparkAssets) {
-            await capAutomator.exec(assetAddress)
+            await insistOnExecution(() => capAutomator.exec(assetAddress))
         }
 
         await mine(2, { interval: 24 * 60 * 60 })
@@ -184,10 +184,12 @@ describe('CapAutomator', function () {
 
                     const supplyCapBefore = BigInt((await protocolDataProvider.getReserveCaps(wbtc)).supplyCap)
 
-                    await keeper.sendTransaction({
-                        to: callData[0].to,
-                        data: callData[0].data,
-                    })
+                    await insistOnExecution(() =>
+                        keeper.sendTransaction({
+                            to: callData[0].to,
+                            data: callData[0].data,
+                        }),
+                    )
 
                     const supplyCapAfter = BigInt((await protocolDataProvider.getReserveCaps(wbtc)).supplyCap)
 
@@ -205,7 +207,7 @@ describe('CapAutomator', function () {
                     // supplying only 1/4 of the full supply amount
                     await supply(wbtcWhale, wbtc, amountInFullTokens * BigInt(10 ** 8))
 
-                    await capAutomator.exec(wbtc)
+                    await insistOnExecution(() => capAutomator.exec(wbtc))
 
                     await withdraw(wbtcWhale, wbtc, amountInFullTokens * BigInt(10 ** 8))
 
@@ -227,10 +229,12 @@ describe('CapAutomator', function () {
 
                     const supplyCapBefore = BigInt((await protocolDataProvider.getReserveCaps(wbtc)).supplyCap)
 
-                    await keeper.sendTransaction({
-                        to: callData[0].to,
-                        data: callData[0].data,
-                    })
+                    await insistOnExecution(() =>
+                        keeper.sendTransaction({
+                            to: callData[0].to,
+                            data: callData[0].data,
+                        }),
+                    )
 
                     const supplyCapAfter = BigInt((await protocolDataProvider.getReserveCaps(wbtc)).supplyCap)
 
@@ -249,7 +253,7 @@ describe('CapAutomator', function () {
                         (BigInt(wbtcGap) * BigInt(percentageOfTheGapNeededForTrigger)) / BigInt(100)
 
                     await supply(wstethWhale, wsteth, wstethAmountInFullTokens * BigInt(10 ** 18))
-                    await capAutomator.exec(wsteth)
+                    await insistOnExecution(() => capAutomator.exec(wsteth))
 
                     await withdraw(wstethWhale, wsteth, wstethAmountInFullTokens * BigInt(10 ** 18))
                     await supply(wbtcWhale, wbtc, wbtcAmountInFullTokens * BigInt(10 ** 8))
@@ -276,10 +280,12 @@ describe('CapAutomator', function () {
 
                     await Promise.all(
                         callData.map(async (txData) => {
-                            await keeper.sendTransaction({
-                                to: txData.to,
-                                data: txData.data,
-                            })
+                            await insistOnExecution(() =>
+                                keeper.sendTransaction({
+                                    to: txData.to,
+                                    data: txData.data,
+                                }),
+                            )
                         }),
                     )
 
@@ -297,8 +303,8 @@ describe('CapAutomator', function () {
         beforeEach(async () => {
             await supply(wstethWhale, wsteth, BigInt(40000) * BigInt(10 ** 18))
             await supply(wbtcWhale, wbtc, BigInt(400) * BigInt(10 ** 8))
-            await capAutomator.execSupply(wsteth)
-            await capAutomator.execSupply(wbtc)
+            await insistOnExecution(() => capAutomator.execSupply(wsteth))
+            await insistOnExecution(() => capAutomator.execSupply(wbtc))
             await mine(2, { interval: 24 * 60 * 60 })
         })
 
@@ -361,10 +367,12 @@ describe('CapAutomator', function () {
 
                     const borrowCapBefore = BigInt((await protocolDataProvider.getReserveCaps(wsteth)).borrowCap)
 
-                    await keeper.sendTransaction({
-                        to: callData[0].to,
-                        data: callData[0].data,
-                    })
+                    await insistOnExecution(() =>
+                        keeper.sendTransaction({
+                            to: callData[0].to,
+                            data: callData[0].data,
+                        }),
+                    )
 
                     const borrowCapAfter = BigInt((await protocolDataProvider.getReserveCaps(wsteth)).borrowCap)
 
@@ -381,7 +389,7 @@ describe('CapAutomator', function () {
                     // borrowing only 1/4 of the full borrow amount
                     await borrow(wbtcWhale, wsteth, amountInFullTokens * BigInt(10 ** 18))
 
-                    await capAutomator.exec(wsteth)
+                    await insistOnExecution(() => capAutomator.exec(wsteth))
 
                     await repay(wbtcWhale, wsteth, amountInFullTokens * BigInt(10 ** 18))
 
@@ -403,10 +411,12 @@ describe('CapAutomator', function () {
 
                     const borrowCapBefore = BigInt((await protocolDataProvider.getReserveCaps(wsteth)).borrowCap)
 
-                    await keeper.sendTransaction({
-                        to: callData[0].to,
-                        data: callData[0].data,
-                    })
+                    await insistOnExecution(() =>
+                        keeper.sendTransaction({
+                            to: callData[0].to,
+                            data: callData[0].data,
+                        }),
+                    )
 
                     const borrowCapAfter = BigInt((await protocolDataProvider.getReserveCaps(wsteth)).borrowCap)
 
@@ -425,7 +435,7 @@ describe('CapAutomator', function () {
                         (BigInt(wstethGap) * BigInt(percentageOfTheGapNeededForTrigger)) / BigInt(100)
 
                     await borrow(wstethWhale, weth, wethAmountInFullTokens * BigInt(10 ** 18))
-                    await capAutomator.exec(weth)
+                    await insistOnExecution(() => capAutomator.exec(weth))
 
                     await repay(wstethWhale, weth, wethAmountInFullTokens * BigInt(10 ** 18))
                     await borrow(wbtcWhale, wsteth, wstethAmountInFullTokens * BigInt(10 ** 18))
@@ -452,10 +462,12 @@ describe('CapAutomator', function () {
 
                     await Promise.all(
                         callData.map(async (txData) => {
-                            await keeper.sendTransaction({
-                                to: txData.to,
-                                data: txData.data,
-                            })
+                            await insistOnExecution(() =>
+                                keeper.sendTransaction({
+                                    to: txData.to,
+                                    data: txData.data,
+                                }),
+                            )
                         }),
                     )
 
@@ -494,7 +506,7 @@ describe('CapAutomator', function () {
                         (BigInt(borrowGap) * BigInt(percentageOfTheGapNeededForTrigger)) / BigInt(100)
 
                     await supply(wbtcWhale, wbtc, BigInt(400) * BigInt(10 ** 8))
-                    await capAutomator.execSupply(wbtc)
+                    await insistOnExecution(() => capAutomator.execSupply(wbtc))
 
                     await supply(wstethWhale, wsteth, supplyAmountInFullTokens * BigInt(10 ** 18))
                     await borrow(wbtcWhale, wsteth, borrowAmountInFullTokens * BigInt(10 ** 18))
@@ -518,10 +530,12 @@ describe('CapAutomator', function () {
                     const supplyCapBefore = BigInt((await protocolDataProvider.getReserveCaps(wsteth)).supplyCap)
                     const borrowCapBefore = BigInt((await protocolDataProvider.getReserveCaps(wsteth)).borrowCap)
 
-                    await keeper.sendTransaction({
-                        to: callData[0].to,
-                        data: callData[0].data,
-                    })
+                    await insistOnExecution(() =>
+                        keeper.sendTransaction({
+                            to: callData[0].to,
+                            data: callData[0].data,
+                        }),
+                    )
 
                     const supplyCapAfter = BigInt((await protocolDataProvider.getReserveCaps(wsteth)).supplyCap)
                     const borrowCapAfter = BigInt((await protocolDataProvider.getReserveCaps(wsteth)).borrowCap)
@@ -542,11 +556,11 @@ describe('CapAutomator', function () {
                         (BigInt(borrowGap) * BigInt(percentageOfTheGapNeededForTrigger)) / BigInt(100)
 
                     await supply(wbtcWhale, wbtc, BigInt(400) * BigInt(10 ** 8))
-                    await capAutomator.execSupply(wbtc)
+                    await insistOnExecution(() => capAutomator.execSupply(wbtc))
 
                     await supply(wstethWhale, wsteth, supplyAmountInFullTokens * BigInt(10 ** 18))
                     await borrow(wbtcWhale, wsteth, borrowAmountInFullTokens * BigInt(10 ** 18))
-                    await capAutomator.exec(wsteth)
+                    await insistOnExecution(() => capAutomator.exec(wsteth))
 
                     await withdraw(wstethWhale, wsteth, supplyAmountInFullTokens * BigInt(10 ** 18))
                     await repay(wbtcWhale, wsteth, borrowAmountInFullTokens * BigInt(10 ** 18))
@@ -570,10 +584,12 @@ describe('CapAutomator', function () {
                     const supplyCapBefore = BigInt((await protocolDataProvider.getReserveCaps(wsteth)).supplyCap)
                     const borrowCapBefore = BigInt((await protocolDataProvider.getReserveCaps(wsteth)).borrowCap)
 
-                    await keeper.sendTransaction({
-                        to: callData[0].to,
-                        data: callData[0].data,
-                    })
+                    await insistOnExecution(() =>
+                        keeper.sendTransaction({
+                            to: callData[0].to,
+                            data: callData[0].data,
+                        }),
+                    )
 
                     const supplyCapAfter = BigInt((await protocolDataProvider.getReserveCaps(wsteth)).supplyCap)
                     const borrowCapAfter = BigInt((await protocolDataProvider.getReserveCaps(wsteth)).borrowCap)
@@ -633,10 +649,12 @@ describe('CapAutomator', function () {
 
                     await Promise.all(
                         callData.map(async (txData) => {
-                            await keeper.sendTransaction({
-                                to: txData.to,
-                                data: txData.data,
-                            })
+                            await insistOnExecution(() =>
+                                keeper.sendTransaction({
+                                    to: txData.to,
+                                    data: txData.data,
+                                }),
+                            )
                         }),
                     )
 
@@ -709,10 +727,12 @@ describe('CapAutomator', function () {
 
                     await Promise.all(
                         callData.map(async (txData) => {
-                            await keeper.sendTransaction({
-                                to: txData.to,
-                                data: txData.data,
-                            })
+                            await insistOnExecution(() =>
+                                keeper.sendTransaction({
+                                    to: txData.to,
+                                    data: txData.data,
+                                }),
+                            )
                         }),
                     )
 
