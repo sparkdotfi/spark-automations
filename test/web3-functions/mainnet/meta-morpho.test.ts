@@ -12,7 +12,7 @@ import { BigNumber } from 'ethers'
 
 const { w3f, ethers } = hre
 
-describe.only('MetaMorpho', function () {
+describe('MetaMorpho', function () {
     this.timeout(0)
 
     let cleanStateRestorer: SnapshotRestorer
