@@ -114,6 +114,8 @@ describe('MetaMorpho', function () {
             susdeCurrentCap.add(1),
         )
 
+        await mine(2, { interval: timelock.sub(1) })
+
         const { result } = await metaMorphoW3F.run('onRun', { userArgs })
 
         expect(result.canExec).to.equal(false)
@@ -133,16 +135,22 @@ describe('MetaMorpho', function () {
             ],
             susdeInitialCap.add(1),
         )
+        await mine(2, { interval: timelock.sub(1) })
 
-        await mine(2, { interval: timelock })
+        const { result: negativeResult } = await metaMorphoW3F.run('onRun', { userArgs })
 
-        const { result } = await metaMorphoW3F.run('onRun', { userArgs })
+        expect(negativeResult.canExec).to.equal(false)
+        !negativeResult.canExec && expect(negativeResult.message).to.equal('No pending caps to be accepted')
 
-        expect(result.canExec).to.equal(true)
-        if (!result.canExec) {
+        await mine(2, { interval: 1 })
+
+        const { result: positiveResult } = await metaMorphoW3F.run('onRun', { userArgs })
+
+        expect(positiveResult.canExec).to.equal(true)
+        if (!positiveResult.canExec) {
             throw ''
         }
-        const callData = result.callData as Web3FunctionResultCallData[]
+        const callData = positiveResult.callData as Web3FunctionResultCallData[]
 
         expect(callData).to.deep.equal([
             {
