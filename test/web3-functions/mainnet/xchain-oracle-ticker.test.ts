@@ -6,8 +6,8 @@ import { Web3FunctionHardhat } from '@gelatonetwork/web3-functions-sdk/hardhat-p
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { SnapshotRestorer, impersonateAccount, takeSnapshot, time } from '@nomicfoundation/hardhat-network-helpers'
 
-import { forwarderAbi, forwarderArbitrumAbi, potAbi } from '../abis'
-import { addresses, insistOnExecution } from '../utils'
+import { forwarderAbi, forwarderArbitrumAbi, potAbi } from '../../../abis'
+import { addresses, insistOnExecution } from '../../../utils'
 
 const { w3f, ethers } = hre
 

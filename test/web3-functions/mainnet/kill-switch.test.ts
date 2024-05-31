@@ -6,8 +6,8 @@ import { Web3FunctionResultCallData } from '@gelatonetwork/web3-functions-sdk/*'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { SnapshotRestorer, impersonateAccount, takeSnapshot } from '@nomicfoundation/hardhat-network-helpers'
 
-import { killSwitchOracleAbi, oracleAbi } from '../abis'
-import { addresses } from '../utils'
+import { killSwitchOracleAbi, oracleAbi } from '../../../abis'
+import { addresses } from '../../../utils'
 
 const { w3f, ethers } = hre
 

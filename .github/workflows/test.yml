@@ -30,5 +30,14 @@ jobs:
       - name: Run linter
         run: yarn lint
 
-      - name: Run tests
-        run: yarn test
+      - name: Run formatter
+        run: yarn format:check
+
+      - name: Run utils tests
+        run: yarn test:utils
+
+      - name: Run gnosis tests
+        run: yarn test:gnosis
+
+      - name: Run mainnet tests
+        run: yarn test:mainnet

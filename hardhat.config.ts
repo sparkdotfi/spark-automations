@@ -17,15 +17,33 @@ dotenv.config({ path: __dirname + '/.env' })
 
 // Libraries
 import assert from 'assert'
+import { HardhatNetworkForkingUserConfig } from 'hardhat/types'
 
 // Process Env Variables
 const ALCHEMY_ID = process.env.ALCHEMY_ID
 assert.ok(ALCHEMY_ID, 'no Alchemy ID in process.env')
 const INFURA_ID = process.env.INFURA_ID
 assert.ok(INFURA_ID, 'no Infura ID in process.env')
+const TEST_NETWORK = process.env.TEST_NETWORK
+assert.ok(TEST_NETWORK, 'no network defined')
 
 const PRIVATE_KEY = process.env.PRIVATE_KEY
 const ETHERSCAN_KEY = process.env.ETHERSCAN_KEY
+
+let forking = {
+    url: `https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_ID}`,
+    blockNumber: 19875940, // 2024-05-15 02:20:35
+} as HardhatNetworkForkingUserConfig
+
+if (TEST_NETWORK == 'mainnet') {
+    console.log('\nRunning Ethereum Mainnet test suite')
+} else if (TEST_NETWORK == 'gnosis') {
+    console.log('\nRunning Gnosis Chain test suite')
+    forking = {
+        url: `https://rpc.ankr.com/gnosis`,
+        blockNumber: 33991690, // 2024-05-17 01:39:20
+    }
+}
 
 // ================================= CONFIG =========================================
 const config: HardhatUserConfig = {
@@ -45,11 +63,15 @@ const config: HardhatUserConfig = {
 
     networks: {
         hardhat: {
-            forking: {
-                url: `https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_ID}`,
-                blockNumber: 19875940, // 2024-05-15 02:20:35
-            },
+            forking,
             allowBlocksWithSameTimestamp: true,
+            chains: {
+                100: {
+                    hardforkHistory: {
+                        cancun: 33991690,
+                    },
+                },
+            },
         },
         // localhost: {
         //   url: 'http://localhost:8545',
