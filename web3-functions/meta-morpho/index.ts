@@ -1,66 +1,36 @@
 import { Contract } from '@ethersproject/contracts'
 import { Web3Function, Web3FunctionContext } from '@gelatonetwork/web3-functions-sdk'
 
-import { metaMorphoAbi, multicallAbi } from '../../abis'
-import { addresses, calculateMetaMorphoMarketId } from '../../utils'
-
-type MarketParams = {
-    loanToken: string
-    collateralToken: string
-    oracle: string
-    irm: string
-    lltv: string
-}
+import { metaMorphoAbi, morphoAbi, multicallAbi } from '../../abis'
+import { addresses } from '../../utils'
 
 Web3Function.onRun(async (context: Web3FunctionContext) => {
-    const { multiChainProvider, userArgs } = context
+    const { multiChainProvider } = context
 
     const provider = multiChainProvider.default()
 
-    const marketParams_loanToken = userArgs.marketParams_loanToken as Array<string>
-    const marketParams_collateralToken = userArgs.marketParams_collateralToken as Array<string>
-    const marketParams_oracle = userArgs.marketParams_oracle as Array<string>
-    const marketParams_irm = userArgs.marketParams_irm as Array<string>
-    const marketParams_lltv = userArgs.marketParams_lltv as Array<string>
-
-    if (
-        marketParams_loanToken.length !== marketParams_collateralToken.length ||
-        marketParams_loanToken.length !== marketParams_oracle.length ||
-        marketParams_loanToken.length !== marketParams_irm.length ||
-        marketParams_loanToken.length !== marketParams_lltv.length
-    ) {
-        throw new Error('Configuration error: marketParams arrays must have the same length')
-    }
-
-    const markets: Record<string, MarketParams> = {}
-
-    for (let i = 0; i < marketParams_loanToken.length; i++) {
-        const marketId = calculateMetaMorphoMarketId(
-            marketParams_loanToken[i],
-            marketParams_collateralToken[i],
-            marketParams_oracle[i],
-            marketParams_irm[i],
-            marketParams_lltv[i],
-        )
-
-        markets[marketId] = {
-            loanToken: marketParams_loanToken[i],
-            collateralToken: marketParams_collateralToken[i],
-            oracle: marketParams_oracle[i],
-            irm: marketParams_irm[i],
-            lltv: marketParams_lltv[i],
-        }
-    }
-
     const metaMorpho = new Contract(addresses.mainnet.metaMorpho, metaMorphoAbi, provider)
+    const morpho = new Contract(await metaMorpho.MORPHO(), morphoAbi, provider)
     const multicall = new Contract(addresses.mainnet.multicall, multicallAbi, provider)
+
+    const logs = await provider.getLogs({
+        address: addresses.mainnet.metaMorpho,
+        topics: [metaMorpho.interface.getEventTopic('SubmitCap')],
+        fromBlock: 19875940,
+    })
+
+    const marketIds = logs.map((log) => metaMorpho.interface.parseLog(log)).map((parsedLog) => parsedLog.args.id)
 
     const multicallCalls: Array<{ target: string; callData: string }> = []
 
-    for (const marketId of Object.keys(markets)) {
+    for (const marketId of marketIds) {
         multicallCalls.push({
             target: metaMorpho.address,
             callData: metaMorpho.interface.encodeFunctionData('pendingCap', [marketId]),
+        })
+        multicallCalls.push({
+            target: morpho.address,
+            callData: morpho.interface.encodeFunctionData('idToMarketParams', [marketId]),
         })
     }
 
@@ -70,12 +40,13 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
 
     const callsToExecute: Array<{ to: string; data: string }> = []
 
-    Object.keys(markets).forEach((marketId, index) => {
-        const { validAt } = metaMorpho.interface.decodeFunctionResult('pendingCap', multicallResults[index])
+    marketIds.forEach((_, index) => {
+        const { validAt } = metaMorpho.interface.decodeFunctionResult('pendingCap', multicallResults[index * 2])
+        const marketParams = morpho.interface.decodeFunctionResult('idToMarketParams', multicallResults[index * 2 + 1])
         if (validAt != 0 && validAt <= latestTimestamp) {
             callsToExecute.push({
                 to: metaMorpho.address,
-                data: metaMorpho.interface.encodeFunctionData('acceptCap', [Object.values(markets[marketId])]),
+                data: metaMorpho.interface.encodeFunctionData('acceptCap', [marketParams.slice(0, 5)]),
             })
         }
     })
