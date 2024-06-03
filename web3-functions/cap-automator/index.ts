@@ -6,12 +6,14 @@ import { capAutomatorAbi, multicallAbi, poolAbi, protocolDataProviderAbi } from 
 import { addresses, gasAboveAverage } from '../../utils'
 
 Web3Function.onRun(async (context: Web3FunctionContext) => {
-    const { multiChainProvider, userArgs, gelatoArgs } = context
+    const { multiChainProvider, userArgs, gelatoArgs, secrets } = context
 
     const performGasCheck = userArgs.performGasCheck as boolean
     const currentGasPrice = BigInt(gelatoArgs.gasPrice.toString())
 
-    if (performGasCheck && (await gasAboveAverage(axios, '', currentGasPrice)())) {
+    const etherscanApiKey = (await secrets.get('COINGECKO_API_KEY')) as string
+
+    if (performGasCheck && (await gasAboveAverage(axios, etherscanApiKey, currentGasPrice)())) {
         return {
             canExec: false,
             message: 'Gas above average',
