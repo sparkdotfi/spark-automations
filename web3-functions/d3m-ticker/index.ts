@@ -11,7 +11,7 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
     const performGasCheck = userArgs.performGasCheck as boolean
     const currentGasPrice = BigInt(gelatoArgs.gasPrice.toString())
 
-    const etherscanApiKey = await secrets.get("COINGECKO_API_KEY") as string
+    const etherscanApiKey = (await secrets.get('COINGECKO_API_KEY')) as string
 
     if (performGasCheck && (await gasAboveAverage(axios, etherscanApiKey, currentGasPrice)())) {
         return {
