@@ -1,0 +1,13 @@
+{
+    "web3FunctionVersion": "2.0.0",
+    "runtime": "js-1.0",
+    "memory": 128,
+    "timeout": 300,
+    "userArgs": {
+        "marketParams_loanToken": "string[]",
+        "marketParams_collateralToken": "string[]",
+        "marketParams_oracle": "string[]",
+        "marketParams_irm": "string[]",
+        "marketParams_lltv": "string[]"
+    }
+}

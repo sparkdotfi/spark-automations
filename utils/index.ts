@@ -1,4 +1,5 @@
 export * from './addresses'
+export * from './calculateMetaMorphoMarketId'
 export * from './constants'
 export * from './gasAboveAverage'
 export * from './insistOnExecution'
