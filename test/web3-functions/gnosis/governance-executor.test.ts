@@ -170,7 +170,8 @@ describe('GovernanceExecutor', function () {
         expect(await executor.getCurrentState(4)).to.equal(1)
     })
 
-    it('executes multiple proposal', async () => {
+    it('executes multiple proposals', async () => {
+
         const firstPayload = await payloadFactory.deploy()
         const secondPayload = await payloadFactory.deploy()
 
