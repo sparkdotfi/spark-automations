@@ -171,7 +171,6 @@ describe('GovernanceExecutor', function () {
     })
 
     it('executes multiple proposals', async () => {
-
         const firstPayload = await payloadFactory.deploy()
         const secondPayload = await payloadFactory.deploy()
 
