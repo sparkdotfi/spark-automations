@@ -2,31 +2,40 @@ import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import { expect } from 'chai'
 
-import { formatDateArguments, gasAboveAverage } from '../../utils/gasAboveAverage'
+import { formatDateArguments, gasAboveAverage } from '../../utils'
 
 describe('gasAboveAverage', function () {
     const gwei = BigInt(10 ** 9)
-    const mockAxios = new MockAdapter(axios)
 
-    mockAxios.onGet().reply(200, {
-        status: '1',
-        message: 'OK',
-        result: [
-            {
-                UTCDate: '2024-04-03',
-                unixTimeStamp: '1712181600',
-                maxGasPrice_Wei: '600000000000', // 600 gwei
-                minGasPrice_Wei: '4000000000', // 4 gwei
-                avgGasPrice_Wei: '10000000000', // 10 gwei
-            },
-            {
-                UTCDate: '2024-04-04',
-                unixTimeStamp: '1712181600',
-                maxGasPrice_Wei: '600000000000', // 600 gwei
-                minGasPrice_Wei: '4000000000', // 4 gwei
-                avgGasPrice_Wei: '20000000000', // 20 gwei
-            },
-        ],
+    let mockAxios: MockAdapter
+
+    before(() => {
+        mockAxios = new MockAdapter(axios)
+
+        mockAxios.onGet().reply(200, {
+            status: '1',
+            message: 'OK',
+            result: [
+                {
+                    UTCDate: '2024-04-03',
+                    unixTimeStamp: '1712181600',
+                    maxGasPrice_Wei: '600000000000', // 600 gwei
+                    minGasPrice_Wei: '4000000000', // 4 gwei
+                    avgGasPrice_Wei: '10000000000', // 10 gwei
+                },
+                {
+                    UTCDate: '2024-04-04',
+                    unixTimeStamp: '1712181600',
+                    maxGasPrice_Wei: '600000000000', // 600 gwei
+                    minGasPrice_Wei: '4000000000', // 4 gwei
+                    avgGasPrice_Wei: '20000000000', // 20 gwei
+                },
+            ],
+        })
+    })
+
+    after(() => {
+        mockAxios.reset()
     })
 
     it('gas price is above average', async () => {
