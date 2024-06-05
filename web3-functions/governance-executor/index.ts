@@ -12,7 +12,10 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
 
     const domain = userArgs.domain as ForeignDomainAlias
     if (foreignDomainAliases.indexOf(domain) === -1) {
-        throw new Error(`Invalid domain: ${domain}`)
+        return {
+            canExec: false,
+            message: `Invalid domain: ${domain}`,
+        }
     }
     const executorAddress = addresses[domain].executor
     const multicallAddress = addresses[domain].multicall

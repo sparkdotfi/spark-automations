@@ -14,8 +14,6 @@ import {
 import { gnosisGovernanceExecutorAbi } from '../../../abis'
 import { addresses } from '../../../utils'
 
-chai.use(require('chai-as-promised'))
-
 const { w3f, ethers } = hre
 const { expect } = chai
 
@@ -77,9 +75,10 @@ describe('GovernanceExecutor', function () {
     })
 
     it('fails when domain is invalid', async () => {
-        expect(governanceExecutorW3F.run('onRun', { userArgs: { domain: 'invalid-domain' } })).to.be.rejectedWith(
-            'Fail to run web3 function: Error: Invalid domain: invalid-domain',
-        )
+        const { result } = await governanceExecutorW3F.run('onRun', { userArgs: { domain: 'invalid-domain' } })
+
+        expect(result.canExec).to.equal(false)
+        !result.canExec && expect(result.message).to.equal('Invalid domain: invalid-domain')
     })
 
     it('does not execute actions when no actions are ready', async () => {
