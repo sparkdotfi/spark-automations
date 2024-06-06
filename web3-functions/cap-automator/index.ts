@@ -1,9 +1,10 @@
 import { Contract } from '@ethersproject/contracts'
 import { Web3Function, Web3FunctionContext } from '@gelatonetwork/web3-functions-sdk'
 import axios from 'axios'
+import { utils } from 'ethers'
 
-import { capAutomatorAbi, multicallAbi, poolAbi, protocolDataProviderAbi } from '../../abis'
-import { addresses, gasAboveAverage } from '../../utils'
+import { capAutomatorAbi, erc20Abi, multicallAbi, poolAbi, protocolDataProviderAbi } from '../../abis'
+import { addresses, gasAboveAverage, sendMessageToSlack as _sendMessageToSlack } from '../../utils'
 
 Web3Function.onRun(async (context: Web3FunctionContext) => {
     const { multiChainProvider, userArgs, gelatoArgs, secrets } = context
@@ -12,6 +13,8 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
     const currentGasPrice = BigInt(gelatoArgs.gasPrice.toString())
 
     const etherscanApiKey = (await secrets.get('COINGECKO_API_KEY')) as string
+    const slackWebhookUrl = (await secrets.get('SLACK_WEBHOOK_URL')) as string
+    const sendMessageToSlack = _sendMessageToSlack(axios, slackWebhookUrl)
 
     if (performGasCheck && (await gasAboveAverage(axios, etherscanApiKey, currentGasPrice)())) {
         return {
@@ -27,6 +30,8 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
     const protocolDataProvider = new Contract(addresses.mainnet.protocolDataProvider, protocolDataProviderAbi, provider)
     const capAutomator = new Contract(addresses.mainnet.capAutomator, capAutomatorAbi, provider)
     const multicall = new Contract(addresses.mainnet.multicall, multicallAbi, provider)
+
+    const erc20Interface = new utils.Interface(erc20Abi)
 
     const sparkAssets = (await pool.getReservesList()) as string[]
 
@@ -55,11 +60,17 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
                     target: addresses.mainnet.capAutomator,
                     callData: capAutomator.interface.encodeFunctionData('exec', [assetAddress]),
                 },
+                {
+                    target: assetAddress,
+                    callData: erc20Interface.encodeFunctionData('symbol'),
+                },
             ],
         ]
     }
 
     let multicallResults = (await multicall.callStatic.aggregate(multicallCalls)).returnData
+
+    const assetSymbols = {} as Record<string, string>
 
     for (const assetAddress of sparkAssets) {
         const reserveCaps = protocolDataProvider.interface.decodeFunctionResult('getReserveCaps', multicallResults[0])
@@ -71,7 +82,9 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
         )
         const execResult = capAutomator.interface.decodeFunctionResult('exec', multicallResults[3])
 
-        multicallResults = multicallResults.slice(4)
+        assetSymbols[assetAddress] = erc20Interface.decodeFunctionResult('symbol', multicallResults[4])[0]
+
+        multicallResults = multicallResults.slice(5)
 
         const proposedBorrowCapChange = execResult.newBorrowCap.gt(reserveCaps.borrowCap)
             ? execResult.newBorrowCap.sub(reserveCaps.borrowCap)
@@ -90,14 +103,18 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
     }
 
     const calls: Array<string> = []
+    const messages: Array<string> = []
 
     for (const assetAddress of sparkAssets) {
         if (borrowCapUpdates[assetAddress] && supplyCapUpdates[assetAddress]) {
             calls.push(capAutomator.interface.encodeFunctionData('exec', [assetAddress]))
+            messages.push(`- 'exec' for ${assetSymbols[assetAddress]}`)
         } else if (borrowCapUpdates[assetAddress]) {
             calls.push(capAutomator.interface.encodeFunctionData('execBorrow', [assetAddress]))
+            messages.push(`- 'execBorrow' for ${assetSymbols[assetAddress]}`)
         } else if (supplyCapUpdates[assetAddress]) {
             calls.push(capAutomator.interface.encodeFunctionData('execSupply', [assetAddress]))
+            messages.push(`- 'execSupply' for ${assetSymbols[assetAddress]}`)
         }
     }
 
@@ -108,6 +125,7 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
         }
     }
 
+    await sendMessageToSlack(`\`\`\`Cap Automator Keeper\nCalls to execute:\n${messages.join('\n')}\`\`\``)
     return {
         canExec: true,
         callData: calls.map((call) => ({
