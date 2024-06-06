@@ -1,4 +1,5 @@
 {
     "threshold": 5000,
-    "performGasCheck": true
+    "performGasCheck": true,
+    "sendSlackMessages": true
 }

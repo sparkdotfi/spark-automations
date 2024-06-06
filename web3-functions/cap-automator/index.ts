@@ -4,17 +4,17 @@ import axios from 'axios'
 import { utils } from 'ethers'
 
 import { capAutomatorAbi, erc20Abi, multicallAbi, poolAbi, protocolDataProviderAbi } from '../../abis'
-import { addresses, gasAboveAverage, sendMessageToSlack as _sendMessageToSlack } from '../../utils'
+import { addresses, gasAboveAverage, sendMessageToSlack } from '../../utils'
 
 Web3Function.onRun(async (context: Web3FunctionContext) => {
     const { multiChainProvider, userArgs, gelatoArgs, secrets } = context
 
     const performGasCheck = userArgs.performGasCheck as boolean
+    const sendSlackMessages = userArgs.sendSlackMessages as boolean
     const currentGasPrice = BigInt(gelatoArgs.gasPrice.toString())
 
     const etherscanApiKey = (await secrets.get('COINGECKO_API_KEY')) as string
     const slackWebhookUrl = (await secrets.get('SLACK_WEBHOOK_URL')) as string
-    const sendMessageToSlack = _sendMessageToSlack(axios, slackWebhookUrl)
 
     if (performGasCheck && (await gasAboveAverage(axios, etherscanApiKey, currentGasPrice)())) {
         return {
@@ -125,7 +125,13 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
         }
     }
 
-    await sendMessageToSlack(`\`\`\`Cap Automator Keeper\nCalls to execute:\n${messages.join('\n')}\`\`\``)
+    if (sendSlackMessages) {
+        await sendMessageToSlack(
+            axios,
+            slackWebhookUrl,
+        )(`\`\`\`Cap Automator Keeper\nCalls to execute:\n${messages.join('\n')}\`\`\``)
+    }
+
     return {
         canExec: true,
         callData: calls.map((call) => ({

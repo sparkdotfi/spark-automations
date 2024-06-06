@@ -27,7 +27,11 @@ describe('CapAutomator', function () {
 
     let sparkAssets: string[]
 
-    let userArgs = { threshold: 5000, performGasCheck: false }
+    let userArgs = {
+        threshold: 5000,
+        performGasCheck: false,
+        sendSlackMessages: false,
+    }
 
     const { wbtc, weth, wsteth } = addresses.mainnet
 
