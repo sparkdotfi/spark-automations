@@ -3,15 +3,17 @@ import { Web3Function, Web3FunctionContext } from '@gelatonetwork/web3-functions
 import axios from 'axios'
 
 import { d3mHubAbi, multicallAbi, vatAbi } from '../../abis'
-import { addresses, gasAboveAverage, ilk } from '../../utils'
+import { addresses, gasAboveAverage, ilk, sendMessageToSlack } from '../../utils'
 
 Web3Function.onRun(async (context: Web3FunctionContext) => {
     const { multiChainProvider, userArgs, gelatoArgs, secrets } = context
 
     const performGasCheck = userArgs.performGasCheck as boolean
+    const sendSlackMessages = userArgs.sendSlackMessages as boolean
     const currentGasPrice = BigInt(gelatoArgs.gasPrice.toString())
 
     const etherscanApiKey = (await secrets.get('COINGECKO_API_KEY')) as string
+    const slackWebhookUrl = (await secrets.get('SLACK_WEBHOOK_URL')) as string
 
     if (performGasCheck && (await gasAboveAverage(axios, etherscanApiKey, currentGasPrice)())) {
         return {
@@ -49,20 +51,30 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
             ? BigInt(artBefore) - BigInt(artAfter)
             : BigInt(artAfter) - BigInt(artBefore)
 
-    if (artDifference >= threshold) {
+    if (artDifference < threshold) {
         return {
-            canExec: true,
-            callData: [
-                {
-                    to: addresses.mainnet.d3mHub,
-                    data: d3mHub.interface.encodeFunctionData('exec', [ilk]),
-                },
-            ],
+            canExec: false,
+            message: 'Threshold not met',
         }
-    }
 
+    }
+    if (sendSlackMessages) {
+        const changeDirection =
+        BigInt(artBefore) > BigInt(artAfter)
+            ? 'decrease'
+            : 'increase'
+        await sendMessageToSlack(
+            axios,
+            slackWebhookUrl,
+        )(`\`\`\`D3M Keeper\nArt ${changeDirection} to be executed\`\`\``)
+    }
     return {
-        canExec: false,
-        message: 'Threshold not met',
+        canExec: true,
+        callData: [
+            {
+                to: addresses.mainnet.d3mHub,
+                data: d3mHub.interface.encodeFunctionData('exec', [ilk]),
+            },
+        ],
     }
 })
