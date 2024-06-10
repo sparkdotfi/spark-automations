@@ -2,10 +2,15 @@ import { Contract } from '@ethersproject/contracts'
 import { Web3Function, Web3FunctionContext } from '@gelatonetwork/web3-functions-sdk'
 
 import { metaMorphoAbi, morphoAbi, multicallAbi } from '../../abis'
-import { addresses } from '../../utils'
+import { addresses, sendMessageToSlack } from '../../utils'
+import axios from 'axios'
 
 Web3Function.onRun(async (context: Web3FunctionContext) => {
-    const { multiChainProvider } = context
+    const { multiChainProvider, userArgs, secrets } = context
+
+    const sendSlackMessages = userArgs.sendSlackMessages as boolean
+
+    const slackWebhookUrl = (await secrets.get('SLACK_WEBHOOK_URL')) as string
 
     const provider = multiChainProvider.default()
 
@@ -51,13 +56,22 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
         }
     })
 
-    return callsToExecute.length > 0
-        ? {
-              canExec: true,
-              callData: callsToExecute,
-          }
-        : {
-              canExec: false,
-              message: 'No pending caps to be accepted',
-          }
+    if (callsToExecute.length == 0) {
+        return {
+            canExec: false,
+            message: 'No pending caps to be accepted',
+        }
+    }
+
+    if (sendSlackMessages) {
+        await sendMessageToSlack(
+            axios,
+            slackWebhookUrl,
+        )(`\`\`\`🦾🦋 Morpho Cap Keeper 🦾🦋\n${callsToExecute.length} cap update${callsToExecute.length > 1 ? 's' : ''} to be executed\`\`\``)
+    }
+
+    return {
+        canExec: true,
+        callData: callsToExecute,
+    }
 })
