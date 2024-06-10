@@ -129,7 +129,7 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
         await sendMessageToSlack(
             axios,
             slackWebhookUrl,
-        )(`\`\`\`Cap Automator Keeper\nCalls to execute:\n${messages.join('\n')}\`\`\``)
+        )(`\`\`\`🦾📈📉 Cap Automator Keeper 🦾📈📉\nCalls to execute:\n${messages.join('\n')}\`\`\``)
     }
 
     return {

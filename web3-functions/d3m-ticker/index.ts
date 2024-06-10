@@ -66,7 +66,7 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
         await sendMessageToSlack(
             axios,
             slackWebhookUrl,
-        )(`\`\`\`D3M Keeper\nArt ${changeDirection} to be executed\`\`\``)
+        )(`\`\`\`🦾🏛️ D3M Keeper 🦾🏛️\nArt ${changeDirection} to be executed\`\`\``)
     }
     return {
         canExec: true,
