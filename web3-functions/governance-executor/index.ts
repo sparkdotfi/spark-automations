@@ -1,16 +1,21 @@
 import { Contract } from '@ethersproject/contracts'
 import { Web3Function, Web3FunctionContext } from '@gelatonetwork/web3-functions-sdk'
+import axios from 'axios'
 
 import { multicallAbi, remoteExecutorAbi } from '../../abis'
-import { addresses } from '../../utils'
+import { addresses, sendMessageToSlack } from '../../utils'
 
 const foreignDomainAliases = ['gnosis'] as const
 type ForeignDomainAlias = (typeof foreignDomainAliases)[number]
 
 Web3Function.onRun(async (context: Web3FunctionContext) => {
-    const { multiChainProvider, userArgs } = context
+    const { multiChainProvider, userArgs, secrets } = context
 
     const domain = userArgs.domain as ForeignDomainAlias
+    const sendSlackMessages = userArgs.sendSlackMessages as boolean
+
+    const slackWebhookUrl = (await secrets.get('SLACK_WEBHOOK_URL')) as string
+
     if (foreignDomainAliases.indexOf(domain) === -1) {
         return {
             canExec: false,
@@ -31,6 +36,7 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
 
     const multicallCalls: Array<{ target: string; callData: string }> = []
     const callsToExecute: Array<{ to: string; data: string }> = []
+    const messages: Array<string> = []
 
     for (let i = 0; i < actionSetCount; i++) {
         multicallCalls.push({
@@ -47,12 +53,12 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
 
     for (let i = 0; i < actionSetCount; i++) {
         const currentState = Number(executor.interface.decodeFunctionResult('getCurrentState', multicallResults[0])[0])
-        const executionTime = BigInt(
-            executor.interface.decodeFunctionResult('getActionsSetById', multicallResults[1])[0].executionTime,
-        )
+        const actionsSet = executor.interface.decodeFunctionResult('getActionsSetById', multicallResults[1])[0]
+
         multicallResults = multicallResults.slice(2)
 
-        if (currentState == 0 && latestBlockTimestamp >= executionTime) {
+        if (currentState == 0 && latestBlockTimestamp >= BigInt(actionsSet.executionTime)) {
+            messages.push(`- ${actionsSet.targets[0]}`)
             callsToExecute.push({
                 to: executorAddress,
                 data: executor.interface.encodeFunctionData('execute', [i]),
@@ -60,13 +66,25 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
         }
     }
 
-    return callsToExecute.length > 0
-        ? {
-              canExec: true,
-              callData: callsToExecute,
-          }
-        : {
-              canExec: false,
-              message: 'No actions to execute',
-          }
+    if (callsToExecute.length == 0) {
+        return {
+            canExec: false,
+            message: 'No actions to execute',
+        }
+    }
+
+    if (sendSlackMessages) {
+        await sendMessageToSlack(
+            axios,
+            slackWebhookUrl,
+        )(`\`\`\`🦾🪄 Governance Executor Keeper 🦾🪄
+Domain: ${domain}
+Spells to execute:
+${messages.join('\n')}\`\`\``)
+    }
+
+    return {
+        canExec: true,
+        callData: callsToExecute,
+    }
 })

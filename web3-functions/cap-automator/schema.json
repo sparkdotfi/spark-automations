@@ -5,6 +5,7 @@
     "timeout": 300,
     "userArgs": {
         "threshold": "number",
-        "performGasCheck": "boolean"
-    }
+        "performGasCheck": "boolean",
+        "sendSlackMessages": "boolean"
+}
 }

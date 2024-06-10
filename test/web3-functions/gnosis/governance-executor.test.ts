@@ -12,7 +12,7 @@ import {
     takeSnapshot,
 } from '@nomicfoundation/hardhat-network-helpers'
 import { gnosisGovernanceExecutorAbi } from '../../../abis'
-import { addresses } from '../../../utils'
+import { addresses, sendMessageToSlack } from '../../../utils'
 
 const { w3f, ethers } = hre
 const { expect } = chai
@@ -33,6 +33,8 @@ describe('GovernanceExecutor', function () {
 
     let executorAddress: string
     let executionDelay: number
+
+    const userArgs = { domain: 'gnosis', sendSlackMessages: false }
 
     before(async () => {
         cleanStateRestorer = await takeSnapshot()
@@ -68,14 +70,16 @@ describe('GovernanceExecutor', function () {
     })
 
     it('no actions to execute', async () => {
-        const { result } = await governanceExecutorW3F.run('onRun')
+        const { result } = await governanceExecutorW3F.run('onRun', { userArgs })
 
         expect(result.canExec).to.equal(false)
         !result.canExec && expect(result.message).to.equal('No actions to execute')
     })
 
     it('fails when domain is invalid', async () => {
-        const { result } = await governanceExecutorW3F.run('onRun', { userArgs: { domain: 'invalid-domain' } })
+        const { result } = await governanceExecutorW3F.run('onRun', {
+            userArgs: { domain: 'invalid-domain', sendMessageToSlack: false },
+        })
 
         expect(result.canExec).to.equal(false)
         !result.canExec && expect(result.message).to.equal('Invalid domain: invalid-domain')
@@ -85,7 +89,7 @@ describe('GovernanceExecutor', function () {
         const payload = await payloadFactory.deploy()
         await mockAMB.__callQueueOnExecutor(payload.address)
 
-        const { result } = await governanceExecutorW3F.run('onRun')
+        const { result } = await governanceExecutorW3F.run('onRun', { userArgs })
 
         expect(result.canExec).to.equal(false)
         !result.canExec && expect(result.message).to.equal('No actions to execute')
@@ -97,12 +101,12 @@ describe('GovernanceExecutor', function () {
 
         await mine(2, { interval: executionDelay - 1 })
 
-        const { result: negativeResult } = await governanceExecutorW3F.run('onRun')
+        const { result: negativeResult } = await governanceExecutorW3F.run('onRun', { userArgs })
         expect(negativeResult.canExec).to.equal(false)
 
         await mine(2, { interval: 1 })
 
-        const { result: positiveResult } = await governanceExecutorW3F.run('onRun')
+        const { result: positiveResult } = await governanceExecutorW3F.run('onRun', { userArgs })
 
         expect(positiveResult.canExec).to.equal(true)
 
@@ -138,12 +142,12 @@ describe('GovernanceExecutor', function () {
 
         await mockAMB.__callQueueOnExecutor(secondPayload.address)
 
-        const { result: negativeResult } = await governanceExecutorW3F.run('onRun')
+        const { result: negativeResult } = await governanceExecutorW3F.run('onRun', { userArgs })
         expect(negativeResult.canExec).to.equal(false)
 
         await mine(2, { interval: 1 })
 
-        const { result: positiveResult } = await governanceExecutorW3F.run('onRun')
+        const { result: positiveResult } = await governanceExecutorW3F.run('onRun', { userArgs })
 
         expect(positiveResult.canExec).to.equal(true)
 
@@ -178,12 +182,12 @@ describe('GovernanceExecutor', function () {
 
         await mine(2, { interval: executionDelay - 1 })
 
-        const { result: negativeResult } = await governanceExecutorW3F.run('onRun')
+        const { result: negativeResult } = await governanceExecutorW3F.run('onRun', { userArgs })
         expect(negativeResult.canExec).to.equal(false)
 
         await mine(2, { interval: 1 })
 
-        const { result: positiveResult } = await governanceExecutorW3F.run('onRun')
+        const { result: positiveResult } = await governanceExecutorW3F.run('onRun', { userArgs })
 
         expect(positiveResult.canExec).to.equal(true)
 

@@ -56,13 +56,9 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
             canExec: false,
             message: 'Threshold not met',
         }
-
     }
     if (sendSlackMessages) {
-        const changeDirection =
-        BigInt(artBefore) > BigInt(artAfter)
-            ? 'decrease'
-            : 'increase'
+        const changeDirection = BigInt(artBefore) > BigInt(artAfter) ? 'decrease' : 'increase'
         await sendMessageToSlack(
             axios,
             slackWebhookUrl,
