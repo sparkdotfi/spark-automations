@@ -1,11 +1,12 @@
 import { Contract } from '@ethersproject/contracts'
 import { Web3Function, Web3FunctionContext } from '@gelatonetwork/web3-functions-sdk'
+import axios from 'axios'
 
 import { forwarderAbi, forwarderArbitrumAbi, potAbi } from '../../abis'
-import { addresses } from '../../utils'
+import { addresses, sendMessageToSlack } from '../../utils'
 
 Web3Function.onRun(async (context: Web3FunctionContext) => {
-    const { multiChainProvider, userArgs } = context
+    const { multiChainProvider, userArgs, secrets } = context
 
     const provider = multiChainProvider.default()
 
@@ -13,6 +14,9 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
     const maxDelta = BigInt(userArgs.maxDelta as string)
     const gasLimit = BigInt(userArgs.gasLimit as string)
     const isBridgingArbitrumStyle = userArgs.isBridgingArbitrumStyle as boolean
+    const sendSlackMessages = userArgs.sendSlackMessages as boolean
+
+    const slackWebhookUrl = (await secrets.get('SLACK_WEBHOOK_URL')) as string
 
     const forwarder = new Contract(forwarderAddress, forwarderAbi, provider)
     const pot = new Contract(addresses.mainnet.pot, potAbi, provider)
@@ -30,11 +34,22 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
         }
     }
 
+    let domainAlias = forwarderAddress
+    if (forwarderAddress == addresses.mainnet.dsrForwarders.arbitrum) domainAlias = 'Arbitrum'
+    if (forwarderAddress == addresses.mainnet.dsrForwarders.base) domainAlias = 'Base'
+    if (forwarderAddress == addresses.mainnet.dsrForwarders.optimism) domainAlias = 'Optimism'
+
+    const slackMessage = `\`\`\`🦾🔮 DSR Oracle Keeper 🦾🔮\nFeed refresh to be sent to ${domainAlias}\`\`\``
+
     if (isBridgingArbitrumStyle) {
         const maxFeePerGas = BigInt(userArgs.maxFeePerGas as string)
         const baseFee = BigInt(userArgs.baseFee as string)
 
         const forwarderArbitrum = new Contract(forwarderAddress, forwarderArbitrumAbi, provider)
+
+        if (sendSlackMessages) {
+            await sendMessageToSlack(axios, slackWebhookUrl)(slackMessage)
+        }
 
         return {
             canExec: true,
@@ -45,6 +60,10 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
                 },
             ],
         }
+    }
+
+    if (sendSlackMessages) {
+        await sendMessageToSlack(axios, slackWebhookUrl)(slackMessage)
     }
 
     return {
