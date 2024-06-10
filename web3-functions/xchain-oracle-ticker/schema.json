@@ -9,6 +9,7 @@
         "gasLimit": "string",
         "isBridgingArbitrumStyle": "boolean",
         "maxFeePerGas": "string",
-        "baseFee": "string"
+        "baseFee": "string",
+        "sendSlackMessages": "boolean"
     }
 }
