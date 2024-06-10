@@ -1,9 +1,9 @@
 import { Contract } from '@ethersproject/contracts'
 import { Web3Function, Web3FunctionContext } from '@gelatonetwork/web3-functions-sdk'
+import axios from 'axios'
 
 import { metaMorphoAbi, morphoAbi, multicallAbi } from '../../abis'
 import { addresses, sendMessageToSlack } from '../../utils'
-import axios from 'axios'
 
 Web3Function.onRun(async (context: Web3FunctionContext) => {
     const { multiChainProvider, userArgs, secrets } = context
@@ -67,7 +67,8 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
         await sendMessageToSlack(
             axios,
             slackWebhookUrl,
-        )(`\`\`\`🦾🦋 Morpho Cap Keeper 🦾🦋\n${callsToExecute.length} cap update${callsToExecute.length > 1 ? 's' : ''} to be executed\`\`\``)
+        )(`\`\`\`🦾🦋 Morpho Cap Keeper 🦾🦋
+\n${callsToExecute.length} cap update${callsToExecute.length > 1 ? 's' : ''} to be executed\`\`\``)
     }
 
     return {
