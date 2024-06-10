@@ -13,6 +13,7 @@
         "format": "prettier --check \"./**/*.{js,ts,tsx,json}\" README.md",
         "format:fix": "prettier --write \"./**/*.{js,ts,tsx,json}\" README.md",
         "format:check": "prettier --check */**/*.*{js,json,md,ts}",
+        "ipfs": "npx ts-node scripts/uploadToIpfs.ts",
         "lint": "eslint --max-warnings=0 --ext ts,tsx --report-unused-disable-directives web3-functions",
         "lint:fix": "yarn lint --fix",
         "lint:sol": "solhint contracts/**/*.sol",
