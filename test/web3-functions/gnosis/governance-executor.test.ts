@@ -78,7 +78,7 @@ describe('GovernanceExecutor', function () {
 
     it('fails when domain is invalid', async () => {
         const { result } = await governanceExecutorW3F.run('onRun', {
-            userArgs: { domain: 'invalid-domain', sendMessageToSlack: false },
+            userArgs: { domain: 'invalid-domain', sendSlackMessages: false },
         })
 
         expect(result.canExec).to.equal(false)
