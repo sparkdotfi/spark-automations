@@ -3,8 +3,8 @@ import fs from 'fs'
 const w3fName = process.argv[2]
 
 if (!w3fName) {
-  console.error('Please provide a w3f name')
-  process.exit(1)
+    console.error('Please provide a w3f name')
+    process.exit(1)
 }
 console.log(`Uploading ${w3fName} to IPFS...`)
 
