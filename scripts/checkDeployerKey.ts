@@ -3,13 +3,14 @@ import { ethers } from "ethers"
 
 console.log('== Testing access to the deployer key ==')
 
-const keystorePath = process.argv[2]
-const passwordPath = process.argv[3]
+const keystorePath = process.argv[2] || process.env.KEYSTORE_PATH as string
+const passwordPath = process.argv[3] || process.env.PASSWORD_PATH as string
 
 console.log('   * Keystore path:', keystorePath)
 console.log('   * Password path:', passwordPath || 'No password path provided')
 
-const keystore = JSON.parse(fs.readFileSync(keystorePath,'utf8'))
-const password = passwordPath ? fs.readFileSync(passwordPath,'utf8') : ''
+const password = passwordPath ? fs.readFileSync(passwordPath,'utf8').slice(0, -1) : ''
+const keystore = fs.readFileSync(keystorePath,'utf8')
+const deployer = ethers.Wallet.fromEncryptedJsonSync(keystore, password)
 
-console.log(ethers.utils.HDNode)
+console.log('   * Deployer:     ', deployer.address)
