@@ -68,7 +68,6 @@ const deploy = async (w3fName: string, deploymentLogic: () => Promise<void>) => 
     // ********** CAP AUTOMATOR ****************************************************************************************
     // *****************************************************************************************************************
     await deploy('cap-automator', async () => {
-
         const { taskId, tx }: TaskTransaction = await mainnetAutomation.createBatchExecTask({
             name: 'Cap Automator',
             web3FunctionHash: ipfsDeployment,
@@ -84,17 +83,19 @@ const deploy = async (w3fName: string, deploymentLogic: () => Promise<void>) => 
         })
 
         await tx.wait()
-        await mainnetManagement.secrets.set({
-            SLACK_WEBHOOK_URL: slackWebhookUrl,
-            ETHERSCAN_API_KEY: etherscanApiKey,
-        }, taskId)
+        await mainnetManagement.secrets.set(
+            {
+                SLACK_WEBHOOK_URL: slackWebhookUrl,
+                ETHERSCAN_API_KEY: etherscanApiKey,
+            },
+            taskId,
+        )
     })
 
     // *****************************************************************************************************************
     // ********** D3M TICKER *******************************************************************************************
     // *****************************************************************************************************************
     await deploy('d3m-ticker', async () => {
-
         const { taskId, tx }: TaskTransaction = await mainnetAutomation.createBatchExecTask({
             name: 'D3M Ticker',
             web3FunctionHash: ipfsDeployment,
@@ -110,17 +111,19 @@ const deploy = async (w3fName: string, deploymentLogic: () => Promise<void>) => 
         })
 
         await tx.wait()
-        await mainnetManagement.secrets.set({
-            SLACK_WEBHOOK_URL: slackWebhookUrl,
-            ETHERSCAN_API_KEY: etherscanApiKey,
-        }, taskId)
+        await mainnetManagement.secrets.set(
+            {
+                SLACK_WEBHOOK_URL: slackWebhookUrl,
+                ETHERSCAN_API_KEY: etherscanApiKey,
+            },
+            taskId,
+        )
     })
 
     // *****************************************************************************************************************
     // ********** GOVERNANCE EXECUTOR **********************************************************************************
     // *****************************************************************************************************************
     await deploy('governance-executor', async () => {
-
         const { taskId, tx }: TaskTransaction = await gnosisAutomation.createBatchExecTask({
             name: 'Governance Executor [Gnosis]',
             web3FunctionHash: ipfsDeployment,
@@ -135,47 +138,52 @@ const deploy = async (w3fName: string, deploymentLogic: () => Promise<void>) => 
         })
 
         await tx.wait()
-        await gnosisManagement.secrets.set({
-            SLACK_WEBHOOK_URL: slackWebhookUrl,
-        }, taskId)
+        await gnosisManagement.secrets.set(
+            {
+                SLACK_WEBHOOK_URL: slackWebhookUrl,
+            },
+            taskId,
+        )
     })
 
     // *****************************************************************************************************************
     // ********** KILL SWITCH ******************************************************************************************
     // *****************************************************************************************************************
     await deploy('kill-switch', async () => {
-            const aggregatorInterface = new ethers.utils.Interface(oracleAggregatorAbi)
+        const aggregatorInterface = new ethers.utils.Interface(oracleAggregatorAbi)
 
-            const wbtcBtcOracle = new ethers.Contract(addresses.mainnet.priceSources.wbtcBtc, oracleAbi, deployer)
-            const wbtcBtcAggregator = await wbtcBtcOracle.aggregator()
+        const wbtcBtcOracle = new ethers.Contract(addresses.mainnet.priceSources.wbtcBtc, oracleAbi, deployer)
+        const wbtcBtcAggregator = await wbtcBtcOracle.aggregator()
 
-            const { taskId: wbtcBtcTaskId, tx: wbtcBtcTx }: TaskTransaction = await mainnetAutomation.createBatchExecTask({
-                name: 'Kill Switch [WBTC-BTC]',
-                web3FunctionHash: ipfsDeployment,
-                web3FunctionArgs: {
-                    sendSlackMessages: true,
+        const { taskId: wbtcBtcTaskId, tx: wbtcBtcTx }: TaskTransaction = await mainnetAutomation.createBatchExecTask({
+            name: 'Kill Switch [WBTC-BTC]',
+            web3FunctionHash: ipfsDeployment,
+            web3FunctionArgs: {
+                sendSlackMessages: true,
+            },
+            trigger: {
+                type: TriggerType.EVENT,
+                filter: {
+                    address: wbtcBtcAggregator,
+                    topics: [[aggregatorInterface.getEventTopic('AnswerUpdated')]],
                 },
-                trigger: {
-                    type: TriggerType.EVENT,
-                    filter: {
-                        address: wbtcBtcAggregator,
-                        topics: [
-                            [aggregatorInterface.getEventTopic('AnswerUpdated')],
-                        ],
-                    },
-                    blockConfirmations: 0,
-                },
-            })
+                blockConfirmations: 0,
+            },
+        })
 
-            await wbtcBtcTx.wait()
-            await mainnetManagement.secrets.set({
+        await wbtcBtcTx.wait()
+        await mainnetManagement.secrets.set(
+            {
                 SLACK_WEBHOOK_URL: slackWebhookUrl,
-            }, wbtcBtcTaskId)
+            },
+            wbtcBtcTaskId,
+        )
 
-            const stethEthOracle = new ethers.Contract(addresses.mainnet.priceSources.stethEth, oracleAbi, deployer)
-            const stethEthAggregator = await stethEthOracle.aggregator()
+        const stethEthOracle = new ethers.Contract(addresses.mainnet.priceSources.stethEth, oracleAbi, deployer)
+        const stethEthAggregator = await stethEthOracle.aggregator()
 
-            const { taskId: stethEthTaskId , tx: stethEthTx  }: TaskTransaction = await mainnetAutomation.createBatchExecTask({
+        const { taskId: stethEthTaskId, tx: stethEthTx }: TaskTransaction = await mainnetAutomation.createBatchExecTask(
+            {
                 name: 'Kill Switch [stETH-ETH]',
                 web3FunctionHash: ipfsDeployment,
                 web3FunctionArgs: {
@@ -185,20 +193,23 @@ const deploy = async (w3fName: string, deploymentLogic: () => Promise<void>) => 
                     type: TriggerType.EVENT,
                     filter: {
                         address: stethEthAggregator,
-                        topics: [
-                            [aggregatorInterface.getEventTopic('AnswerUpdated')],
-                        ],
+                        topics: [[aggregatorInterface.getEventTopic('AnswerUpdated')]],
                     },
                     blockConfirmations: 0,
                 },
-            })
+            },
+        )
 
-            await stethEthTx.wait()
-            await mainnetManagement.secrets.set({
+        await stethEthTx.wait()
+        await mainnetManagement.secrets.set(
+            {
                 SLACK_WEBHOOK_URL: slackWebhookUrl,
-            }, stethEthTaskId)
+            },
+            stethEthTaskId,
+        )
 
-            const { taskId: timeBasedTaskId , tx: timeBasedTx  }: TaskTransaction = await mainnetAutomation.createBatchExecTask({
+        const { taskId: timeBasedTaskId, tx: timeBasedTx }: TaskTransaction =
+            await mainnetAutomation.createBatchExecTask({
                 name: 'Kill Switch [Time Based]',
                 web3FunctionHash: ipfsDeployment,
                 web3FunctionArgs: {
@@ -207,20 +218,22 @@ const deploy = async (w3fName: string, deploymentLogic: () => Promise<void>) => 
                 trigger: {
                     type: TriggerType.TIME,
                     interval: fiveMinutesInMilliseconds,
-                }
+                },
             })
 
-            await timeBasedTx.wait()
-            await mainnetManagement.secrets.set({
+        await timeBasedTx.wait()
+        await mainnetManagement.secrets.set(
+            {
                 SLACK_WEBHOOK_URL: slackWebhookUrl,
-            }, timeBasedTaskId)
+            },
+            timeBasedTaskId,
+        )
     })
 
     // *****************************************************************************************************************
     // ********** META MORPHO ******************************************************************************************
     // *****************************************************************************************************************
     await deploy('meta-morpho', async () => {
-
         const { taskId, tx }: TaskTransaction = await mainnetAutomation.createBatchExecTask({
             name: 'Meta Morpho Cap Updater',
             web3FunctionHash: ipfsDeployment,
@@ -234,9 +247,12 @@ const deploy = async (w3fName: string, deploymentLogic: () => Promise<void>) => 
         })
 
         await tx.wait()
-        await mainnetManagement.secrets.set({
-            SLACK_WEBHOOK_URL: slackWebhookUrl,
-        }, taskId)
+        await mainnetManagement.secrets.set(
+            {
+                SLACK_WEBHOOK_URL: slackWebhookUrl,
+            },
+            taskId,
+        )
     })
 
     // *****************************************************************************************************************
@@ -245,36 +261,39 @@ const deploy = async (w3fName: string, deploymentLogic: () => Promise<void>) => 
     await deploy('xchain-oracle-ticker', async () => {
         const dsNoteInterface = new ethers.utils.Interface(dsNoteAbi)
 
-        const { taskId: arbitrumTaskId, tx: arbitrumTx }: TaskTransaction = await mainnetAutomation.createBatchExecTask({
-            name: 'XChain DSR Oracle Ticker [Arbitrum]',
-            web3FunctionHash: ipfsDeployment,
-            web3FunctionArgs: {
-                forwarder: addresses.mainnet.dsrForwarders.arbitrum,
-                maxDelta: '', // Max rho delta
-                gasLimit: '',
-                isBridgingArbitrumStyle: true,
-                maxFeePerGas: '',
-                baseFee: '',
-                sendSlackMessages: true,
-            },
-            trigger: {
-                type: TriggerType.EVENT,
-                filter: {
-                    address: addresses.mainnet.pauseProxy,
-                    topics: [
-                        [dsNoteInterface.getEventTopic('LogNote')],
-                    ],
+        const { taskId: arbitrumTaskId, tx: arbitrumTx }: TaskTransaction = await mainnetAutomation.createBatchExecTask(
+            {
+                name: 'XChain DSR Oracle Ticker [Arbitrum]',
+                web3FunctionHash: ipfsDeployment,
+                web3FunctionArgs: {
+                    forwarder: addresses.mainnet.dsrForwarders.arbitrum,
+                    maxDelta: '', // Max rho delta
+                    gasLimit: '',
+                    isBridgingArbitrumStyle: true,
+                    maxFeePerGas: '',
+                    baseFee: '',
+                    sendSlackMessages: true,
                 },
-                blockConfirmations: 0,
+                trigger: {
+                    type: TriggerType.EVENT,
+                    filter: {
+                        address: addresses.mainnet.pauseProxy,
+                        topics: [[dsNoteInterface.getEventTopic('LogNote')]],
+                    },
+                    blockConfirmations: 0,
+                },
             },
-        })
+        )
 
         await arbitrumTx.wait()
-        await mainnetManagement.secrets.set({
-            SLACK_WEBHOOK_URL: slackWebhookUrl,
-        }, arbitrumTaskId)
+        await mainnetManagement.secrets.set(
+            {
+                SLACK_WEBHOOK_URL: slackWebhookUrl,
+            },
+            arbitrumTaskId,
+        )
 
-        const { taskId: baseTaskId , tx: baseTx  }: TaskTransaction = await mainnetAutomation.createBatchExecTask({
+        const { taskId: baseTaskId, tx: baseTx }: TaskTransaction = await mainnetAutomation.createBatchExecTask({
             name: 'XChain DSR Oracle Ticker [Base]',
             web3FunctionHash: ipfsDeployment,
             web3FunctionArgs: {
@@ -290,46 +309,50 @@ const deploy = async (w3fName: string, deploymentLogic: () => Promise<void>) => 
                 type: TriggerType.EVENT,
                 filter: {
                     address: addresses.mainnet.pauseProxy,
-                    topics: [
-                        [dsNoteInterface.getEventTopic('LogNote')],
-                    ],
+                    topics: [[dsNoteInterface.getEventTopic('LogNote')]],
                 },
                 blockConfirmations: 0,
             },
         })
 
         await baseTx.wait()
-        await mainnetManagement.secrets.set({
-            SLACK_WEBHOOK_URL: slackWebhookUrl,
-        }, baseTaskId)
+        await mainnetManagement.secrets.set(
+            {
+                SLACK_WEBHOOK_URL: slackWebhookUrl,
+            },
+            baseTaskId,
+        )
 
-        const { taskId: optimismTaskId , tx: optimismTx  }: TaskTransaction = await mainnetAutomation.createBatchExecTask({
-            name: 'XChain DSR Oracle Ticker [Optimism]',
-            web3FunctionHash: ipfsDeployment,
-            web3FunctionArgs: {
-                forwarder: addresses.mainnet.dsrForwarders.optimism,
-                maxDelta: '', // Max rho delta
-                gasLimit: '',
-                isBridgingArbitrumStyle: false,
-                maxFeePerGas: '0',
-                baseFee: '0',
-                sendSlackMessages: true,
-            },
-            trigger: {
-                type: TriggerType.EVENT,
-                filter: {
-                    address: addresses.mainnet.pauseProxy,
-                    topics: [
-                        [dsNoteInterface.getEventTopic('LogNote')],
-                    ],
+        const { taskId: optimismTaskId, tx: optimismTx }: TaskTransaction = await mainnetAutomation.createBatchExecTask(
+            {
+                name: 'XChain DSR Oracle Ticker [Optimism]',
+                web3FunctionHash: ipfsDeployment,
+                web3FunctionArgs: {
+                    forwarder: addresses.mainnet.dsrForwarders.optimism,
+                    maxDelta: '', // Max rho delta
+                    gasLimit: '',
+                    isBridgingArbitrumStyle: false,
+                    maxFeePerGas: '0',
+                    baseFee: '0',
+                    sendSlackMessages: true,
                 },
-                blockConfirmations: 0,
+                trigger: {
+                    type: TriggerType.EVENT,
+                    filter: {
+                        address: addresses.mainnet.pauseProxy,
+                        topics: [[dsNoteInterface.getEventTopic('LogNote')]],
+                    },
+                    blockConfirmations: 0,
+                },
             },
-        })
+        )
 
         await optimismTx.wait()
-        await mainnetManagement.secrets.set({
-            SLACK_WEBHOOK_URL: slackWebhookUrl,
-        }, optimismTaskId)
+        await mainnetManagement.secrets.set(
+            {
+                SLACK_WEBHOOK_URL: slackWebhookUrl,
+            },
+            optimismTaskId,
+        )
     })
 })()
