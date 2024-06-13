@@ -2,8 +2,11 @@ import * as fs from 'fs'
 import { ethers } from 'ethers'
 import { AutomateSDK, TaskTransaction, TriggerType, Web3Function } from '@gelatonetwork/automate-sdk'
 
-import { poolAbi } from '../abis'
+import { oracleAbi, oracleAggregatorAbi } from '../abis'
 import { addresses } from '../utils'
+
+const hourInMilliseconds = 1000 * 60 * 60
+const fiveMinutesInMilliseconds = 1000 * 60 * 5
 
 console.log('== Preparing a deployment of all the keeper actions ==')
 
@@ -53,7 +56,6 @@ const deploy = async (w3fName: string, deploymentLogic: () => Promise<void>) => 
         console.log(`   * Skipping ${w3fName} deployment (already deployed)`)
     } else {
         console.log(`   * Deploying ${w3fName}...`)
-
         await deploymentLogic()
 
         gelatoDeployments[w3fName] = ipfsDeployment
@@ -66,32 +68,21 @@ const deploy = async (w3fName: string, deploymentLogic: () => Promise<void>) => 
     // ********** CAP AUTOMATOR ****************************************************************************************
     // *****************************************************************************************************************
     await deploy('cap-automator', async () => {
-        const poolInterface = new ethers.utils.Interface(poolAbi)
 
         const { taskId, tx }: TaskTransaction = await mainnetAutomation.createBatchExecTask({
             name: 'Cap Automator',
             web3FunctionHash: ipfsDeployment,
             web3FunctionArgs: {
-                threshold: 5000, // less than 50% of the gap left under the cap
+                threshold: 5000, // less than 5.000bps (50%) of the gap left under the cap
                 performGasCheck: true,
                 sendSlackMessages: true,
             },
             trigger: {
-                type: TriggerType.EVENT,
-                filter: {
-                    address: addresses.mainnet.pool,
-                    topics: [
-                        [
-                            poolInterface.getEventTopic('Supply'),
-                            poolInterface.getEventTopic('Withdraw'),
-                            poolInterface.getEventTopic('Borrow'),
-                            poolInterface.getEventTopic('Repay'),
-                        ],
-                    ],
-                },
-                blockConfirmations: 0,
+                type: TriggerType.TIME,
+                interval: hourInMilliseconds,
             },
         })
+
         await tx.wait()
         await mainnetManagement.secrets.set({
             SLACK_WEBHOOK_URL: slackWebhookUrl,
@@ -103,28 +94,149 @@ const deploy = async (w3fName: string, deploymentLogic: () => Promise<void>) => 
     // ********** D3M TICKER *******************************************************************************************
     // *****************************************************************************************************************
     await deploy('d3m-ticker', async () => {
-        // Put an actual deployment of d3m-ticker
+
+        const { taskId, tx }: TaskTransaction = await mainnetAutomation.createBatchExecTask({
+            name: 'D3M Ticker',
+            web3FunctionHash: ipfsDeployment,
+            web3FunctionArgs: {
+                threshold: '20000000000000000000000000', // 20M DAI (20.000.000e18 DAI)
+                performGasCheck: true,
+                sendSlackMessages: true,
+            },
+            trigger: {
+                type: TriggerType.TIME,
+                interval: hourInMilliseconds,
+            },
+        })
+
+        await tx.wait()
+        await mainnetManagement.secrets.set({
+            SLACK_WEBHOOK_URL: slackWebhookUrl,
+            ETHERSCAN_API_KEY: etherscanApiKey,
+        }, taskId)
     })
 
     // *****************************************************************************************************************
     // ********** GOVERNANCE EXECUTOR **********************************************************************************
     // *****************************************************************************************************************
     await deploy('governance-executor', async () => {
-        // Put an actual deployment of governance-executor
+
+        const { taskId, tx }: TaskTransaction = await gnosisAutomation.createBatchExecTask({
+            name: 'Governance Executor [Gnosis]',
+            web3FunctionHash: ipfsDeployment,
+            web3FunctionArgs: {
+                domain: 'gnosis',
+                sendSlackMessages: true,
+            },
+            trigger: {
+                type: TriggerType.TIME,
+                interval: hourInMilliseconds,
+            },
+        })
+
+        await tx.wait()
+        await gnosisManagement.secrets.set({
+            SLACK_WEBHOOK_URL: slackWebhookUrl,
+        }, taskId)
     })
 
     // *****************************************************************************************************************
     // ********** KILL SWITCH ******************************************************************************************
     // *****************************************************************************************************************
     await deploy('kill-switch', async () => {
-        // Put an actual deployment of kill-switch
+            const aggregatorInterface = new ethers.utils.Interface(oracleAggregatorAbi)
+
+            const wbtcBtcOracle = new ethers.Contract(addresses.mainnet.priceSources.wbtcBtc, oracleAbi, deployer)
+            const wbtcBtcAggregator = await wbtcBtcOracle.aggregator()
+
+            const { taskId: wbtcBtcTaskId, tx: wbtcBtcTx }: TaskTransaction = await mainnetAutomation.createBatchExecTask({
+                name: 'Kill Switch [WBTC-BTC]',
+                web3FunctionHash: ipfsDeployment,
+                web3FunctionArgs: {
+                    sendSlackMessages: true,
+                },
+                trigger: {
+                    type: TriggerType.EVENT,
+                    filter: {
+                        address: wbtcBtcAggregator,
+                        topics: [
+                            [aggregatorInterface.getEventTopic('AnswerUpdated')],
+                        ],
+                    },
+                    blockConfirmations: 0,
+                },
+            })
+
+            await wbtcBtcTx.wait()
+            await mainnetManagement.secrets.set({
+                SLACK_WEBHOOK_URL: slackWebhookUrl,
+            }, wbtcBtcTaskId)
+
+            const stethEthOracle = new ethers.Contract(addresses.mainnet.priceSources.stethEth, oracleAbi, deployer)
+            const stethEthAggregator = await stethEthOracle.aggregator()
+
+            const { taskId: stethEthTaskId , tx: stethEthTx  }: TaskTransaction = await mainnetAutomation.createBatchExecTask({
+                name: 'Kill Switch [stETH-ETH]',
+                web3FunctionHash: ipfsDeployment,
+                web3FunctionArgs: {
+                    sendSlackMessages: true,
+                },
+                trigger: {
+                    type: TriggerType.EVENT,
+                    filter: {
+                        address: stethEthAggregator,
+                        topics: [
+                            [aggregatorInterface.getEventTopic('AnswerUpdated')],
+                        ],
+                    },
+                    blockConfirmations: 0,
+                },
+            })
+
+            await stethEthTx.wait()
+            await mainnetManagement.secrets.set({
+                SLACK_WEBHOOK_URL: slackWebhookUrl,
+            }, stethEthTaskId)
+
+            const { taskId: timeBasedTaskId , tx: timeBasedTx  }: TaskTransaction = await mainnetAutomation.createBatchExecTask({
+                name: 'Kill Switch [stETH-ETH]',
+                web3FunctionHash: ipfsDeployment,
+                web3FunctionArgs: {
+                    sendSlackMessages: true,
+                },
+                trigger: {
+                    type: TriggerType.TIME,
+                    interval: fiveMinutesInMilliseconds,
+                }
+            })
+
+            await timeBasedTx.wait()
+            await mainnetManagement.secrets.set({
+                SLACK_WEBHOOK_URL: slackWebhookUrl,
+            }, timeBasedTaskId)
     })
 
     // *****************************************************************************************************************
     // ********** META MORPHO ******************************************************************************************
     // *****************************************************************************************************************
     await deploy('meta-morpho', async () => {
-        // Put an actual deployment of meta-morpho
+
+        const { taskId, tx }: TaskTransaction = await mainnetAutomation.createBatchExecTask({
+            name: 'Meta Morpho Cap Updater',
+            web3FunctionHash: ipfsDeployment,
+            web3FunctionArgs: {
+                sendSlackMessages: true,
+            },
+            trigger: {
+                type: TriggerType.TIME,
+                interval: hourInMilliseconds,
+            },
+        })
+
+        await tx.wait()
+        await mainnetManagement.secrets.set({
+            SLACK_WEBHOOK_URL: slackWebhookUrl,
+        }, taskId)
     })
 
     // *****************************************************************************************************************
