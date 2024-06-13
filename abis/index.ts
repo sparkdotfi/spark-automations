@@ -1,5 +1,6 @@
 export { default as capAutomatorAbi } from './capAutomator.json'
 export { default as d3mHubAbi } from './d3mHub.json'
+export { default as dsNoteAbi } from './dsNote.json'
 export { default as erc20Abi } from './erc20.json'
 export { default as forwarderAbi } from './forwarder.json'
 export { default as forwarderArbitrumAbi } from './forwarderArbitrum.json'

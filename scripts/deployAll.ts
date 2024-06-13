@@ -2,7 +2,7 @@ import * as fs from 'fs'
 import { ethers } from 'ethers'
 import { AutomateSDK, TaskTransaction, TriggerType, Web3Function } from '@gelatonetwork/automate-sdk'
 
-import { oracleAbi, oracleAggregatorAbi } from '../abis'
+import { dsNoteAbi, oracleAbi, oracleAggregatorAbi } from '../abis'
 import { addresses } from '../utils'
 
 const hourInMilliseconds = 1000 * 60 * 60
@@ -199,7 +199,7 @@ const deploy = async (w3fName: string, deploymentLogic: () => Promise<void>) => 
             }, stethEthTaskId)
 
             const { taskId: timeBasedTaskId , tx: timeBasedTx  }: TaskTransaction = await mainnetAutomation.createBatchExecTask({
-                name: 'Kill Switch [stETH-ETH]',
+                name: 'Kill Switch [Time Based]',
                 web3FunctionHash: ipfsDeployment,
                 web3FunctionArgs: {
                     sendSlackMessages: true,
@@ -243,6 +243,93 @@ const deploy = async (w3fName: string, deploymentLogic: () => Promise<void>) => 
     // ********** XCHAIN ORACLE TICKER *********************************************************************************
     // *****************************************************************************************************************
     await deploy('xchain-oracle-ticker', async () => {
-        // Put an actual deployment of xchain-oracle-ticker
+        const dsNoteInterface = new ethers.utils.Interface(dsNoteAbi)
+
+        const { taskId: arbitrumTaskId, tx: arbitrumTx }: TaskTransaction = await mainnetAutomation.createBatchExecTask({
+            name: 'XChain DSR Oracle Ticker [Arbitrum]',
+            web3FunctionHash: ipfsDeployment,
+            web3FunctionArgs: {
+                forwarder: addresses.mainnet.dsrForwarders.arbitrum,
+                maxDelta: '', // Max rho delta
+                gasLimit: '',
+                isBridgingArbitrumStyle: true,
+                maxFeePerGas: '',
+                baseFee: '',
+                sendSlackMessages: true,
+            },
+            trigger: {
+                type: TriggerType.EVENT,
+                filter: {
+                    address: addresses.mainnet.pauseProxy,
+                    topics: [
+                        [dsNoteInterface.getEventTopic('LogNote')],
+                    ],
+                },
+                blockConfirmations: 0,
+            },
+        })
+
+        await arbitrumTx.wait()
+        await mainnetManagement.secrets.set({
+            SLACK_WEBHOOK_URL: slackWebhookUrl,
+        }, arbitrumTaskId)
+
+        const { taskId: baseTaskId , tx: baseTx  }: TaskTransaction = await mainnetAutomation.createBatchExecTask({
+            name: 'XChain DSR Oracle Ticker [Base]',
+            web3FunctionHash: ipfsDeployment,
+            web3FunctionArgs: {
+                forwarder: addresses.mainnet.dsrForwarders.base,
+                maxDelta: '', // Max rho delta
+                gasLimit: '',
+                isBridgingArbitrumStyle: false,
+                maxFeePerGas: '0',
+                baseFee: '0',
+                sendSlackMessages: true,
+            },
+            trigger: {
+                type: TriggerType.EVENT,
+                filter: {
+                    address: addresses.mainnet.pauseProxy,
+                    topics: [
+                        [dsNoteInterface.getEventTopic('LogNote')],
+                    ],
+                },
+                blockConfirmations: 0,
+            },
+        })
+
+        await baseTx.wait()
+        await mainnetManagement.secrets.set({
+            SLACK_WEBHOOK_URL: slackWebhookUrl,
+        }, baseTaskId)
+
+        const { taskId: optimismTaskId , tx: optimismTx  }: TaskTransaction = await mainnetAutomation.createBatchExecTask({
+            name: 'XChain DSR Oracle Ticker [Optimism]',
+            web3FunctionHash: ipfsDeployment,
+            web3FunctionArgs: {
+                forwarder: addresses.mainnet.dsrForwarders.optimism,
+                maxDelta: '', // Max rho delta
+                gasLimit: '',
+                isBridgingArbitrumStyle: false,
+                maxFeePerGas: '0',
+                baseFee: '0',
+                sendSlackMessages: true,
+            },
+            trigger: {
+                type: TriggerType.EVENT,
+                filter: {
+                    address: addresses.mainnet.pauseProxy,
+                    topics: [
+                        [dsNoteInterface.getEventTopic('LogNote')],
+                    ],
+                },
+                blockConfirmations: 0,
+            },
+        })
+
+        await optimismTx.wait()
+        await mainnetManagement.secrets.set({
+            SLACK_WEBHOOK_URL: slackWebhookUrl,
+        }, optimismTaskId)
     })
 })()
