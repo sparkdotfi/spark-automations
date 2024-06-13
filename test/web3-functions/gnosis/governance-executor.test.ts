@@ -34,8 +34,6 @@ describe('GovernanceExecutor', function () {
     let executorAddress: string
     let executionDelay: number
 
-    const userArgs = { domain: 'gnosis', sendSlackMessages: false }
-
     before(async () => {
         cleanStateRestorer = await takeSnapshot()
         ;[keeper] = await ethers.getSigners()
@@ -70,7 +68,7 @@ describe('GovernanceExecutor', function () {
     })
 
     it('no actions to execute', async () => {
-        const { result } = await governanceExecutorW3F.run('onRun', { userArgs })
+        const { result } = await governanceExecutorW3F.run('onRun')
 
         expect(result.canExec).to.equal(false)
         !result.canExec && expect(result.message).to.equal('No actions to execute')
@@ -89,7 +87,7 @@ describe('GovernanceExecutor', function () {
         const payload = await payloadFactory.deploy()
         await mockAMB.__callQueueOnExecutor(payload.address)
 
-        const { result } = await governanceExecutorW3F.run('onRun', { userArgs })
+        const { result } = await governanceExecutorW3F.run('onRun')
 
         expect(result.canExec).to.equal(false)
         !result.canExec && expect(result.message).to.equal('No actions to execute')
@@ -101,12 +99,12 @@ describe('GovernanceExecutor', function () {
 
         await mine(2, { interval: executionDelay - 1 })
 
-        const { result: negativeResult } = await governanceExecutorW3F.run('onRun', { userArgs })
+        const { result: negativeResult } = await governanceExecutorW3F.run('onRun')
         expect(negativeResult.canExec).to.equal(false)
 
         await mine(2, { interval: 1 })
 
-        const { result: positiveResult } = await governanceExecutorW3F.run('onRun', { userArgs })
+        const { result: positiveResult } = await governanceExecutorW3F.run('onRun')
 
         expect(positiveResult.canExec).to.equal(true)
 
@@ -142,12 +140,12 @@ describe('GovernanceExecutor', function () {
 
         await mockAMB.__callQueueOnExecutor(secondPayload.address)
 
-        const { result: negativeResult } = await governanceExecutorW3F.run('onRun', { userArgs })
+        const { result: negativeResult } = await governanceExecutorW3F.run('onRun')
         expect(negativeResult.canExec).to.equal(false)
 
         await mine(2, { interval: 1 })
 
-        const { result: positiveResult } = await governanceExecutorW3F.run('onRun', { userArgs })
+        const { result: positiveResult } = await governanceExecutorW3F.run('onRun')
 
         expect(positiveResult.canExec).to.equal(true)
 
@@ -182,12 +180,12 @@ describe('GovernanceExecutor', function () {
 
         await mine(2, { interval: executionDelay - 1 })
 
-        const { result: negativeResult } = await governanceExecutorW3F.run('onRun', { userArgs })
+        const { result: negativeResult } = await governanceExecutorW3F.run('onRun')
         expect(negativeResult.canExec).to.equal(false)
 
         await mine(2, { interval: 1 })
 
-        const { result: positiveResult } = await governanceExecutorW3F.run('onRun', { userArgs })
+        const { result: positiveResult } = await governanceExecutorW3F.run('onRun')
 
         expect(positiveResult.canExec).to.equal(true)
 

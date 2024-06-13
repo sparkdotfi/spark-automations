@@ -1,4 +1,4 @@
 {
     "domain": "gnosis",
-    "sendSlackMessages": true
+    "sendSlackMessages": false
 }
