@@ -12,7 +12,7 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
     const sendSlackMessages = userArgs.sendSlackMessages as boolean
     const currentGasPrice = BigInt(gelatoArgs.gasPrice.toString())
 
-    const etherscanApiKey = (await secrets.get('COINGECKO_API_KEY')) as string
+    const etherscanApiKey = (await secrets.get('ETHERSCAN_API_KEY')) as string
     const slackWebhookUrl = (await secrets.get('SLACK_WEBHOOK_URL')) as string
 
     if (performGasCheck && (await gasAboveAverage(axios, etherscanApiKey, currentGasPrice)())) {
