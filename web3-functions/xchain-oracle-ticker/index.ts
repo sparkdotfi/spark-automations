@@ -41,15 +41,15 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
 
     const slackMessage = `\`\`\`🦾🔮 DSR Oracle Keeper 🦾🔮\nFeed refresh to be sent to ${domainAlias}\`\`\``
 
+    if (sendSlackMessages) {
+        await sendMessageToSlack(axios, slackWebhookUrl)(slackMessage)
+    }
+
     if (isBridgingArbitrumStyle) {
         const maxFeePerGas = BigInt(userArgs.maxFeePerGas as string)
         const baseFee = BigInt(userArgs.baseFee as string)
 
         const forwarderArbitrum = new Contract(forwarderAddress, forwarderArbitrumAbi, provider)
-
-        if (sendSlackMessages) {
-            await sendMessageToSlack(axios, slackWebhookUrl)(slackMessage)
-        }
 
         return {
             canExec: true,
@@ -60,10 +60,6 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
                 },
             ],
         }
-    }
-
-    if (sendSlackMessages) {
-        await sendMessageToSlack(axios, slackWebhookUrl)(slackMessage)
     }
 
     return {
