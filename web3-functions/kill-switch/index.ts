@@ -1,11 +1,16 @@
 import { Contract } from '@ethersproject/contracts'
 import { Web3Function, Web3FunctionContext } from '@gelatonetwork/web3-functions-sdk'
+import axios from 'axios'
 
 import { killSwitchOracleAbi, multicallAbi, oracleAbi } from '../../abis'
-import { addresses } from '../../utils'
+import { addresses, sendMessageToSlack } from '../../utils'
 
 Web3Function.onRun(async (context: Web3FunctionContext) => {
-    const { multiChainProvider } = context
+    const { multiChainProvider, userArgs, secrets } = context
+
+    const sendSlackMessages = userArgs.sendSlackMessages as boolean
+
+    const slackWebhookUrl = (await secrets.get('SLACK_WEBHOOK_URL')) as string
 
     const provider = multiChainProvider.default()
 
@@ -53,6 +58,15 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
         multicallResults = multicallResults.slice(3)
 
         if (!triggered && latestAnswer > 0 && latestAnswer <= threshold) {
+            if (sendSlackMessages) {
+                await sendMessageToSlack(
+                    axios,
+                    slackWebhookUrl,
+                )(
+                    `\`\`\`🦾🚨 Kill Switch Keeper 🦾🚨\nTrigger to be executed for ${oracleAddress}\nthreshold:    ${threshold}\nlatestAnswer: ${latestAnswer}\`\`\``,
+                )
+            }
+
             return {
                 canExec: true,
                 callData: [

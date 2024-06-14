@@ -15,6 +15,11 @@ export const addresses = {
         wbtc: '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599',
         weth: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
         wsteth: '0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0',
+        dsrForwarders: {
+            arbitrum: '0x7F36E7F562Ee3f320644F6031e03E12a02B85799',
+            base: '0x8Ed551D485701fe489c215E13E42F6fc59563e0e',
+            optimism: '0x4042127DecC0cF7cc0966791abebf7F76294DeF3',
+        },
     },
     gnosis: {
         executor: '0xc4218C1127cB24a0D6c1e7D25dc34e10f2625f5A',

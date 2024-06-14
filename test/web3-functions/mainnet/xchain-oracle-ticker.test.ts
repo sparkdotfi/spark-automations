@@ -33,6 +33,7 @@ describe('xchainOracleTicker', function () {
         isBridgingArbitrumStyle: false,
         maxFeePerGas: '0',
         baseFee: '0',
+        sendSlackMessages: false,
     }
     let refreshArgs = [userArgs.gasLimit]
 
@@ -188,6 +189,7 @@ describe('xchainOracleTicker', function () {
                 isBridgingArbitrumStyle: true,
                 maxFeePerGas: '30000000000',
                 baseFee: '20000000000',
+                sendSlackMessages: false,
             }
             refreshArgs = [userArgs.gasLimit, userArgs.maxFeePerGas, userArgs.baseFee]
 

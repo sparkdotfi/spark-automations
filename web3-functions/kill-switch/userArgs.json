@@ -1,1 +1,3 @@
-{}
+{
+    "sendSlackMessages": false
+}
