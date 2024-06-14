@@ -268,7 +268,7 @@ const deploy = async (w3fName: string, deploymentLogic: () => Promise<void>) => 
                 web3FunctionArgs: {
                     forwarder: addresses.mainnet.dsrForwarders.arbitrum,
                     maxDelta: '', // Max rho delta
-                    gasLimit: '',
+                    gasLimit: '500000',
                     isBridgingArbitrumStyle: true,
                     maxFeePerGas: '',
                     baseFee: '',
@@ -299,7 +299,7 @@ const deploy = async (w3fName: string, deploymentLogic: () => Promise<void>) => 
             web3FunctionArgs: {
                 forwarder: addresses.mainnet.dsrForwarders.base,
                 maxDelta: '', // Max rho delta
-                gasLimit: '',
+                gasLimit: '500000',
                 isBridgingArbitrumStyle: false,
                 maxFeePerGas: '0',
                 baseFee: '0',
@@ -330,7 +330,7 @@ const deploy = async (w3fName: string, deploymentLogic: () => Promise<void>) => 
                 web3FunctionArgs: {
                     forwarder: addresses.mainnet.dsrForwarders.optimism,
                     maxDelta: '', // Max rho delta
-                    gasLimit: '',
+                    gasLimit: '500000',
                     isBridgingArbitrumStyle: false,
                     maxFeePerGas: '0',
                     baseFee: '0',
