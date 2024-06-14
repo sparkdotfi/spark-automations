@@ -261,38 +261,6 @@ const deploy = async (w3fName: string, deploymentLogic: () => Promise<void>) => 
     await deploy('xchain-oracle-ticker', async () => {
         const dsNoteInterface = new ethers.utils.Interface(dsNoteAbi)
 
-        const { taskId: arbitrumTaskId, tx: arbitrumTx }: TaskTransaction = await mainnetAutomation.createBatchExecTask(
-            {
-                name: 'XChain DSR Oracle Ticker [Arbitrum]',
-                web3FunctionHash: ipfsDeployment,
-                web3FunctionArgs: {
-                    forwarder: addresses.mainnet.dsrForwarders.arbitrum,
-                    maxDelta: '', // Max rho delta
-                    gasLimit: '500000',
-                    isBridgingArbitrumStyle: true,
-                    maxFeePerGas: '',
-                    baseFee: '',
-                    sendSlackMessages: true,
-                },
-                trigger: {
-                    type: TriggerType.EVENT,
-                    filter: {
-                        address: addresses.mainnet.pauseProxy,
-                        topics: [[dsNoteInterface.getEventTopic('LogNote')]],
-                    },
-                    blockConfirmations: 0,
-                },
-            },
-        )
-
-        await arbitrumTx.wait()
-        await mainnetManagement.secrets.set(
-            {
-                SLACK_WEBHOOK_URL: slackWebhookUrl,
-            },
-            arbitrumTaskId,
-        )
-
         const { taskId: baseTaskId, tx: baseTx }: TaskTransaction = await mainnetAutomation.createBatchExecTask({
             name: 'XChain DSR Oracle Ticker [Base]',
             web3FunctionHash: ipfsDeployment,
