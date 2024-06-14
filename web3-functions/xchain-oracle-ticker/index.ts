@@ -1,12 +1,17 @@
 import { Contract } from '@ethersproject/contracts'
 import { Web3Function, Web3FunctionContext } from '@gelatonetwork/web3-functions-sdk'
 import axios from 'axios'
+import { providers } from 'ethers'
 
 import { forwarderAbi, forwarderArbitrumAbi, potAbi } from '../../abis'
 import { addresses, sendMessageToSlack } from '../../utils'
 
 Web3Function.onRun(async (context: Web3FunctionContext) => {
     const { multiChainProvider, userArgs, secrets } = context
+
+    const arbitrumDomainUrls: Record<string, string> = {
+        [`${addresses.mainnet.dsrForwarders.arbitrum}`]: 'https://arb1.arbitrum.io/rpc',
+    }
 
     const provider = multiChainProvider.default()
 
@@ -45,9 +50,11 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
         await sendMessageToSlack(axios, slackWebhookUrl)(slackMessage)
     }
 
-    if (isBridgingArbitrumStyle) {
-        const maxFeePerGas = BigInt(userArgs.maxFeePerGas as string)
-        const baseFee = BigInt(userArgs.baseFee as string)
+    // if arbitrumDomainUrls[forwarderAddress] not defined, it means the domain is not supported
+    if (isBridgingArbitrumStyle && arbitrumDomainUrls[forwarderAddress]) {
+        const provider = new providers.JsonRpcProvider(arbitrumDomainUrls[forwarderAddress])
+        const baseFee = (await provider.getGasPrice()).mul(10).div(100)
+        const maxFeePerGas = baseFee.add(baseFee.mul(30).div(100))
 
         const forwarderArbitrum = new Contract(forwarderAddress, forwarderArbitrumAbi, provider)
 

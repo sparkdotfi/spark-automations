@@ -8,8 +8,6 @@
         "maxDelta": "string",
         "gasLimit": "string",
         "isBridgingArbitrumStyle": "boolean",
-        "maxFeePerGas": "string",
-        "baseFee": "string",
         "sendSlackMessages": "boolean"
     }
 }

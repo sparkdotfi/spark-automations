@@ -11,7 +11,7 @@ import { addresses, insistOnExecution } from '../../../utils'
 
 const { w3f, ethers } = hre
 
-describe('xchainOracleTicker', function () {
+describe.only('xchainOracleTicker', function () {
     this.timeout(0)
 
     let cleanStateRestorer: SnapshotRestorer
@@ -31,8 +31,6 @@ describe('xchainOracleTicker', function () {
         maxDelta: '10000000',
         gasLimit: '8000000',
         isBridgingArbitrumStyle: false,
-        maxFeePerGas: '0',
-        baseFee: '0',
         sendSlackMessages: false,
     }
     let refreshArgs = [userArgs.gasLimit]
@@ -95,12 +93,18 @@ describe('xchainOracleTicker', function () {
             }
             const callData = result.callData as Web3FunctionResultCallData[]
 
-            expect(callData).to.deep.equal([
-                {
-                    to: userArgs.forwarder,
-                    data: forwarder.interface.encodeFunctionData('refresh', refreshArgs),
-                },
-            ])
+
+            expect(callData).to.have.length(1)
+            expect(callData[0].to).to.equal(userArgs.forwarder)
+
+            if (!userArgs.isBridgingArbitrumStyle) {
+                expect(callData[0].data).to.equal(forwarder.interface.encodeFunctionData('refresh', refreshArgs))
+            } else {
+                // Remove variable gas price related data from the end of the call data
+                expect(callData[0].data.slice(0, -128)).to.equal(
+                    forwarder.interface.encodeFunctionData('refresh', refreshArgs).slice(0, -128),
+                )
+            }
 
             const dsrBefore = (await forwarder.getLastSeenPotData()).dsr
             expect(dsrBefore).to.not.equal(newDsr)
@@ -152,12 +156,17 @@ describe('xchainOracleTicker', function () {
             }
             const callData = positiveResult.callData as Web3FunctionResultCallData[]
 
-            expect(callData).to.deep.equal([
-                {
-                    to: userArgs.forwarder,
-                    data: forwarder.interface.encodeFunctionData('refresh', refreshArgs),
-                },
-            ])
+            expect(callData).to.have.length(1)
+            expect(callData[0].to).to.equal(userArgs.forwarder)
+
+            if (!userArgs.isBridgingArbitrumStyle) {
+                expect(callData[0].data).to.equal(forwarder.interface.encodeFunctionData('refresh', refreshArgs))
+            } else {
+                // Remove variable gas price related data from the end of the call data
+                expect(callData[0].data.slice(0, -128)).to.equal(
+                    forwarder.interface.encodeFunctionData('refresh', refreshArgs).slice(0, -128),
+                )
+            }
 
             const potRho = (await pot.rho()).toNumber()
             const rhoBefore = (await forwarder.getLastSeenPotData()).rho
@@ -187,11 +196,9 @@ describe('xchainOracleTicker', function () {
                 maxDelta: '10000000',
                 gasLimit: '200000',
                 isBridgingArbitrumStyle: true,
-                maxFeePerGas: '30000000000',
-                baseFee: '20000000000',
                 sendSlackMessages: false,
             }
-            refreshArgs = [userArgs.gasLimit, userArgs.maxFeePerGas, userArgs.baseFee]
+            refreshArgs = [userArgs.gasLimit, '1', '1']
 
             forwarder = new Contract(userArgs.forwarder, forwarderArbitrumAbi, reader)
         })
