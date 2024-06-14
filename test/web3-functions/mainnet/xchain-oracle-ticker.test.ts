@@ -11,7 +11,7 @@ import { addresses, insistOnExecution } from '../../../utils'
 
 const { w3f, ethers } = hre
 
-describe.only('xchainOracleTicker', function () {
+describe('xchainOracleTicker', function () {
     this.timeout(0)
 
     let cleanStateRestorer: SnapshotRestorer
