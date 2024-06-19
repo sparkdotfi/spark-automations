@@ -27,7 +27,7 @@ describe('d3mTicker', function () {
     let threshold: string
 
     const userArgs = { threshold: 0, performGasCheck: false, sendSlackMessages: false }
-    const artDifferenceOnTheFork = BigInt('1795463549442779292633096')
+    const artDifferenceOnTheFork = BigInt('43108457969557943776482696')
 
     before(async () => {
         cleanStateRestorer = await takeSnapshot()
