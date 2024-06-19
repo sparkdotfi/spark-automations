@@ -93,7 +93,6 @@ describe('xchainOracleTicker', function () {
             }
             const callData = result.callData as Web3FunctionResultCallData[]
 
-
             expect(callData).to.have.length(1)
             expect(callData[0].to).to.equal(userArgs.forwarder)
 
