@@ -52,9 +52,9 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
 
     // if arbitrumDomainUrls[forwarderAddress] not defined, it means the domain is not supported
     if (isBridgingArbitrumStyle && arbitrumDomainUrls[forwarderAddress]) {
-        const provider = new providers.JsonRpcProvider(arbitrumDomainUrls[forwarderAddress])
-        const baseFee = (await provider.getGasPrice()).mul(10).div(100)
-        const maxFeePerGas = baseFee.add(baseFee.mul(30).div(100))
+        const arbitrumProvider = new providers.JsonRpcProvider(arbitrumDomainUrls[forwarderAddress])
+        const baseFee = (await arbitrumProvider.getGasPrice()).mul(1025)
+        const maxFeePerGas = baseFee.add(baseFee.mul(20).div(100))
 
         const forwarderArbitrum = new Contract(forwarderAddress, forwarderArbitrumAbi, provider)
 
