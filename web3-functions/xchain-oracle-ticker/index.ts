@@ -7,7 +7,7 @@ import { forwarderAbi, forwarderArbitrumAbi, multicallAbi, potAbi } from '../../
 import { addresses, sendMessageToSlack } from '../../utils'
 
 const arbitrumDomainUrls: Record<string, string> = {
-    arbitrum: 'https://arb1.arbitrum.io/rpc',
+    [`${addresses.mainnet.dsrForwarders.arbitrumStyle.arbitrum}`]: 'https://arb1.arbitrum.io/rpc',
 }
 
 Web3Function.onRun(async (context: Web3FunctionContext) => {
@@ -62,12 +62,12 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
     const arbitrumForwarderInterface = new utils.Interface(forwarderArbitrumAbi)
 
     for (const [domain, forwarderAddress] of Object.entries(arbitrumStyleForwarderAddresses)) {
-        if (arbitrumDomainUrls[domain] == undefined) {
+        if (arbitrumDomainUrls[forwarderAddress] == undefined) {
             continue // Domain not supported
         }
-        const provider = new providers.JsonRpcProvider(arbitrumDomainUrls[domain])
-        const baseFee = (await provider.getGasPrice()).mul(10).div(100)
-        const maxFeePerGas = baseFee.add(baseFee.mul(30).div(100))
+        const arbitrumProvider = new providers.JsonRpcProvider(arbitrumDomainUrls[forwarderAddress])
+        const baseFee = (await arbitrumProvider.getGasPrice()).mul(1025)
+        const maxFeePerGas = baseFee.add(baseFee.mul(20).div(100))
 
         const lastForwardedPotData = forwarderInterface.decodeFunctionResult('getLastSeenPotData', multicallResults[0])[0]
         multicallResults = multicallResults.slice(1)
