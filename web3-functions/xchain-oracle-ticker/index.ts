@@ -66,8 +66,9 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
             continue // Domain not supported
         }
         const arbitrumProvider = new providers.JsonRpcProvider(arbitrumDomainUrls[forwarderAddress])
-        const baseFee = (await arbitrumProvider.getGasPrice()).mul(1025)
-        const maxFeePerGas = baseFee.add(baseFee.mul(20).div(100))
+
+        const baseFee = (await provider.getGasPrice()).mul(120).div(100)
+        const maxFeePerGas = (await arbitrumProvider.getGasPrice()).mul(120).div(100)
 
         const lastForwardedPotData = forwarderInterface.decodeFunctionResult('getLastSeenPotData', multicallResults[0])[0]
         multicallResults = multicallResults.slice(1)

@@ -109,49 +109,18 @@ describe.only('xchainOracleTicker', function () {
             expect(callData).to.have.length(allForwarderAddresses.length)
 
             for (const forwarderAddress of allForwarderAddresses) {
-                console.log('before')
                 const forwarder = new Contract(forwarderAddress, forwarderInterface, reader)
                 const dsrBefore = (await forwarder.getLastSeenPotData()).dsr
-                console.log(forwarderAddress)
-                console.log(dsrBefore.toString())
                 expect(dsrBefore).to.not.equal(newDsr)
             }
 
-            await Promise.all(callData.map(async (call) => {
-                console.log(call)
-                await keeper.sendTransaction(call)
+            await Promise.all(callData.map(async (_callData) => {
+                await keeper.sendTransaction(_callData)
             }))
-            // await insistOnExecution(() =>
-            //     keeper.sendTransaction({
-            //         to: callData[0].to,
-            //         data: callData[0].data,
-            //     }),
-            // )
-            // await insistOnExecution(() =>
-            //     keeper.sendTransaction({
-            //         to: callData[1].to,
-            //         data: callData[1].data,
-            //     }),
-            // )
-            // console.log('balance', utils.formatEther((await keeper.getBalance()).toString()))
-            // // await insistOnExecution(() =>
-            // //     keeper.sendTransaction({
-            // //         to: callData[2].to,
-            // //         data: new utils.Interface(forwarderArbitrumAbi).encodeFunctionData('refresh', [
-            // //             '500000',
-            // //             '1000000000',
-            // //             '1100000000',
-            // //         ]),
-            // //     value: ethers.utils.parseEther('1')
-            // //     }),
-            // // )
 
             for (const forwarderAddress of allForwarderAddresses) {
-                console.log('after')
-                console.log(forwarderAddress)
                 const forwarder = new Contract(forwarderAddress, forwarderInterface, reader)
                 const dsrAfter = (await forwarder.getLastSeenPotData()).dsr
-                console.log(dsrAfter.toString())
                 expect(dsrAfter).to.equal(newDsr)
             }
         })
