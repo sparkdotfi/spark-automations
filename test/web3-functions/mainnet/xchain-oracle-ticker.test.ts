@@ -29,7 +29,7 @@ describe('xchainOracleTicker', function () {
     let userArgs = {
         forwarder: '0x4042127DecC0cF7cc0966791abebf7F76294DeF3',
         maxDelta: '10000000',
-        gasLimit: '8000000',
+        gasLimit: '400000',
         isBridgingArbitrumStyle: false,
         sendSlackMessages: false,
     }
@@ -193,7 +193,7 @@ describe('xchainOracleTicker', function () {
             userArgs = {
                 forwarder: '0x7F36E7F562Ee3f320644F6031e03E12a02B85799',
                 maxDelta: '10000000',
-                gasLimit: '200000',
+                gasLimit: '400000',
                 isBridgingArbitrumStyle: true,
                 sendSlackMessages: false,
             }
