@@ -259,9 +259,7 @@ describe('xchainOracleTicker', function () {
             }),
         )
 
-        for (const forwarderAddress of allForwarderAddresses.filter(
-            (address) => address !== addresses.mainnet.dsrForwarders.optimismStyle.optimism,
-        )) {
+        for (const forwarderAddress of allForwarderAddresses) {
             const forwarder = new Contract(forwarderAddress, forwarderInterface, reader)
             const dsrAfter = (await forwarder.getLastSeenPotData()).dsr
             expect(dsrAfter).to.equal(newDsr)
