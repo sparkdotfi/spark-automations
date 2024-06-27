@@ -5,8 +5,9 @@ import { Web3FunctionResultCallData } from '@gelatonetwork/web3-functions-sdk/*'
 import { Web3FunctionHardhat } from '@gelatonetwork/web3-functions-sdk/hardhat-plugin'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { SnapshotRestorer, impersonateAccount, takeSnapshot, time } from '@nomicfoundation/hardhat-network-helpers'
+import { utils } from 'ethers'
 
-import { forwarderAbi, forwarderArbitrumAbi, potAbi } from '../../../abis'
+import { forwarderAbi, potAbi } from '../../../abis'
 import { addresses, insistOnExecution } from '../../../utils'
 
 const { w3f, ethers } = hre
@@ -23,16 +24,17 @@ describe('xchainOracleTicker', function () {
 
     let xchainOracleTickerW3F: Web3FunctionHardhat
 
-    let forwarder: Contract
+    let forwarderInterface: utils.Interface
+
     let pot: Contract
 
+    let optimismStyleForwarderAddresses: string[]
+    let arbitrumStyleForwarderAddresses: string[]
+    let allForwarderAddresses: string[]
+
     let userArgs = {
-        forwarder: '0x4042127DecC0cF7cc0966791abebf7F76294DeF3',
         maxDelta: '10000000',
-        gasLimit: '8000000',
-        isBridgingArbitrumStyle: false,
-        maxFeePerGas: '0',
-        baseFee: '0',
+        gasLimit: '800000',
         sendSlackMessages: false,
     }
     let refreshArgs = [userArgs.gasLimit]
@@ -45,8 +47,12 @@ describe('xchainOracleTicker', function () {
         await impersonateAccount(addresses.mainnet.pauseProxy)
         pauseProxy = await ethers.getSigner(addresses.mainnet.pauseProxy)
 
-        forwarder = new Contract(userArgs.forwarder, forwarderAbi, reader)
+        optimismStyleForwarderAddresses = Object.values(addresses.mainnet.dsrForwarders.optimismStyle)
+        arbitrumStyleForwarderAddresses = Object.values(addresses.mainnet.dsrForwarders.arbitrumStyle)
+        allForwarderAddresses = [...optimismStyleForwarderAddresses, ...arbitrumStyleForwarderAddresses]
+
         pot = new Contract(addresses.mainnet.pot, potAbi, pauseProxy)
+        forwarderInterface = new utils.Interface(forwarderAbi)
 
         xchainOracleTickerW3F = w3f.get('xchain-oracle-ticker')
     })
@@ -70,132 +76,195 @@ describe('xchainOracleTicker', function () {
         !result.canExec && expect(result.message).to.equal('Pot data refresh not needed')
     })
 
-    const runForwarderTests = () => {
-        it('refresh is needed (dsr updated)', async () => {
-            // both drip and file need to be called at the same timestamp
-            await insistOnExecution(() => pot.drip())
-            const timestamp = (await pot.provider.getBlock('latest')).timestamp
-            await time.setNextBlockTimestamp(timestamp)
-            await insistOnExecution(() =>
-                pauseProxy.sendTransaction({
-                    to: pot.address,
-                    data: pot.interface.encodeFunctionData('file(bytes32,uint256)', [
-                        ethers.utils.formatBytes32String('dsr'),
-                        newDsr,
-                    ]),
-                }),
-            )
+    it('one refresh is needed (stale rho)', async () => {
+        const rhoDeltas = await Promise.all(
+            allForwarderAddresses.map(async (forwarderAddress) => {
+                const forwarder = new Contract(forwarderAddress, forwarderInterface, reader)
+                const lastSeenPotData = await forwarder.getLastSeenPotData()
+                return (await pot.provider.getBlock('latest')).timestamp - lastSeenPotData.rho
+            }),
+        )
 
-            const { result } = await xchainOracleTickerW3F.run('onRun', { userArgs })
+        const largestRhoDelta = Math.max(...rhoDeltas)
 
-            expect(result.canExec).to.equal(true)
-
-            if (!result.canExec) {
-                throw ''
-            }
-            const callData = result.callData as Web3FunctionResultCallData[]
-
-            expect(callData).to.deep.equal([
-                {
-                    to: userArgs.forwarder,
-                    data: forwarder.interface.encodeFunctionData('refresh', refreshArgs),
-                },
-            ])
-
-            const dsrBefore = (await forwarder.getLastSeenPotData()).dsr
-            expect(dsrBefore).to.not.equal(newDsr)
-
-            await insistOnExecution(() =>
-                keeper.sendTransaction({
-                    to: callData[0].to,
-                    data: callData[0].data,
-                }),
-            )
-
-            const dsrAfter = (await forwarder.getLastSeenPotData()).dsr
-            expect(dsrAfter).to.equal(newDsr)
+        const { result } = await xchainOracleTickerW3F.run('onRun', {
+            userArgs: {
+                ...userArgs,
+                maxDelta: (largestRhoDelta - 1).toString(),
+            },
         })
 
-        it('refresh is needed (stale rho)', async () => {
-            let maxDelta = (
-                Math.floor(new Date().getTime() / 1000) -
-                (await forwarder.getLastSeenPotData()).rho +
-                1
-            ).toString()
+        expect(result.canExec).to.equal(true)
 
-            const { result: negativeResult } = await xchainOracleTickerW3F.run('onRun', {
-                userArgs: {
-                    ...userArgs,
-                    maxDelta,
-                },
-            })
+        if (!result.canExec) {
+            throw ''
+        }
+        const callData = result.callData as Web3FunctionResultCallData[]
 
-            expect(negativeResult.canExec).to.equal(false)
+        expect(callData).to.have.length(1)
 
-            maxDelta = (
-                Math.floor(new Date().getTime() / 1000) -
-                (await forwarder.getLastSeenPotData()).rho -
-                1
-            ).toString()
+        expect(callData[0].to).to.equal(allForwarderAddresses[rhoDeltas.indexOf(largestRhoDelta)])
 
-            const { result: positiveResult } = await xchainOracleTickerW3F.run('onRun', {
-                userArgs: {
-                    ...userArgs,
-                    maxDelta,
-                },
-            })
+        const forwarder = new Contract(callData[0].to, forwarderInterface, reader)
+        const potRho = (await pot.rho()).toNumber()
+        const rhoBefore = (await forwarder.getLastSeenPotData()).rho
 
-            expect(positiveResult.canExec).to.equal(true)
+        await insistOnExecution(() =>
+            keeper.sendTransaction({
+                to: callData[0].to,
+                data: callData[0].data,
+            }),
+        )
 
-            if (!positiveResult.canExec) {
-                throw ''
-            }
-            const callData = positiveResult.callData as Web3FunctionResultCallData[]
+        const rhoAfter = (await forwarder.getLastSeenPotData()).rho
 
-            expect(callData).to.deep.equal([
-                {
-                    to: userArgs.forwarder,
-                    data: forwarder.interface.encodeFunctionData('refresh', refreshArgs),
-                },
-            ])
+        expect(rhoBefore).to.be.lessThan(potRho)
+        expect(rhoAfter).to.equal(potRho)
+    })
 
+    it('all refreshes are needed (stale rho)', async () => {
+        const rhoDeltas = await Promise.all(
+            allForwarderAddresses.map(async (forwarderAddress) => {
+                const forwarder = new Contract(forwarderAddress, forwarderInterface, reader)
+                const lastSeenPotData = await forwarder.getLastSeenPotData()
+                return (await pot.provider.getBlock('latest')).timestamp - lastSeenPotData.rho
+            }),
+        )
+
+        const smallestRhoDelta = Math.min(...rhoDeltas)
+
+        const { result } = await xchainOracleTickerW3F.run('onRun', {
+            userArgs: {
+                ...userArgs,
+                maxDelta: (smallestRhoDelta - 1).toString(),
+            },
+        })
+
+        expect(result.canExec).to.equal(true)
+
+        if (!result.canExec) {
+            throw ''
+        }
+        const callData = result.callData as Web3FunctionResultCallData[]
+
+        expect(callData).to.have.length(allForwarderAddresses.length)
+
+        for (const forwarderAddress of allForwarderAddresses) {
+            const forwarder = new Contract(forwarderAddress, forwarderInterface, reader)
             const potRho = (await pot.rho()).toNumber()
             const rhoBefore = (await forwarder.getLastSeenPotData()).rho
 
             await insistOnExecution(() =>
                 keeper.sendTransaction({
-                    to: callData[0].to,
-                    data: callData[0].data,
+                    to: callData[allForwarderAddresses.indexOf(forwarderAddress)].to,
+                    data: callData[allForwarderAddresses.indexOf(forwarderAddress)].data,
                 }),
             )
 
             const rhoAfter = (await forwarder.getLastSeenPotData()).rho
-
             expect(rhoBefore).to.be.lessThan(potRho)
             expect(rhoAfter).to.equal(potRho)
-        })
-    }
-
-    describe('default forwarder', () => {
-        runForwarderTests()
+        }
     })
 
-    describe('arbitrum style forwarder', () => {
-        before(async () => {
-            userArgs = {
-                forwarder: '0x7F36E7F562Ee3f320644F6031e03E12a02B85799',
-                maxDelta: '10000000',
-                gasLimit: '200000',
-                isBridgingArbitrumStyle: true,
-                maxFeePerGas: '30000000000',
-                baseFee: '20000000000',
-                sendSlackMessages: false,
-            }
-            refreshArgs = [userArgs.gasLimit, userArgs.maxFeePerGas, userArgs.baseFee]
+    it('all refreshes are needed (dsr update)', async () => {
+        // both drip and file need to be called at the same timestamp
+        await insistOnExecution(() => pot.drip())
+        const timestamp = (await pot.provider.getBlock('latest')).timestamp
+        await time.setNextBlockTimestamp(timestamp)
+        await insistOnExecution(() =>
+            pauseProxy.sendTransaction({
+                to: pot.address,
+                data: pot.interface.encodeFunctionData('file(bytes32,uint256)', [
+                    ethers.utils.formatBytes32String('dsr'),
+                    newDsr,
+                ]),
+            }),
+        )
 
-            forwarder = new Contract(userArgs.forwarder, forwarderArbitrumAbi, reader)
-        })
+        const { result } = await xchainOracleTickerW3F.run('onRun', { userArgs })
 
-        runForwarderTests()
+        expect(result.canExec).to.equal(true)
+
+        if (!result.canExec) {
+            throw ''
+        }
+        const callData = result.callData as Web3FunctionResultCallData[]
+
+        expect(callData).to.have.length(allForwarderAddresses.length)
+
+        for (const forwarderAddress of allForwarderAddresses) {
+            const forwarder = new Contract(forwarderAddress, forwarderInterface, reader)
+            const dsrBefore = (await forwarder.getLastSeenPotData()).dsr
+            expect(dsrBefore).to.not.equal(newDsr)
+        }
+
+        await Promise.all(
+            callData.map(async (_callData) => {
+                await keeper.sendTransaction(_callData)
+            }),
+        )
+
+        for (const forwarderAddress of allForwarderAddresses) {
+            const forwarder = new Contract(forwarderAddress, forwarderInterface, reader)
+            const dsrAfter = (await forwarder.getLastSeenPotData()).dsr
+            expect(dsrAfter).to.equal(newDsr)
+        }
+    })
+
+    it('some refreshes are needed (dsr update)', async () => {
+        // both drip and file need to be called at the same timestamp
+        await insistOnExecution(() => pot.drip())
+        const timestamp = (await pot.provider.getBlock('latest')).timestamp
+        await time.setNextBlockTimestamp(timestamp)
+        await insistOnExecution(() =>
+            pauseProxy.sendTransaction({
+                to: pot.address,
+                data: pot.interface.encodeFunctionData('file(bytes32,uint256)', [
+                    ethers.utils.formatBytes32String('dsr'),
+                    newDsr,
+                ]),
+            }),
+        )
+
+        let manuallyTriggeredForwarder = new Contract(
+            addresses.mainnet.dsrForwarders.optimismStyle.optimism,
+            forwarderInterface,
+            keeper,
+        )
+        await insistOnExecution(() => manuallyTriggeredForwarder.refresh(...refreshArgs))
+
+        const { result } = await xchainOracleTickerW3F.run('onRun', { userArgs })
+
+        expect(result.canExec).to.equal(true)
+
+        if (!result.canExec) {
+            throw ''
+        }
+        const callData = result.callData as Web3FunctionResultCallData[]
+
+        expect(callData).to.have.length(allForwarderAddresses.length - 1)
+
+        for (const forwarderAddress of allForwarderAddresses.filter(
+            (address) => address !== addresses.mainnet.dsrForwarders.optimismStyle.optimism,
+        )) {
+            const forwarder = new Contract(forwarderAddress, forwarderInterface, reader)
+            const dsrBefore = (await forwarder.getLastSeenPotData()).dsr
+            expect(dsrBefore).to.not.equal(newDsr)
+        }
+
+        await Promise.all(
+            callData.map(async (_callData) => {
+                await keeper.sendTransaction(_callData)
+            }),
+        )
+
+        for (const forwarderAddress of allForwarderAddresses.filter(
+            (address) => address !== addresses.mainnet.dsrForwarders.optimismStyle.optimism,
+        )) {
+            const forwarder = new Contract(forwarderAddress, forwarderInterface, reader)
+            const dsrAfter = (await forwarder.getLastSeenPotData()).dsr
+            expect(dsrAfter).to.equal(newDsr)
+        }
     })
 })
