@@ -261,16 +261,12 @@ const deploy = async (w3fName: string, deploymentLogic: () => Promise<void>) => 
     await deploy('xchain-oracle-ticker', async () => {
         const dsNoteInterface = new ethers.utils.Interface(dsNoteAbi)
 
-        const { taskId: baseTaskId, tx: baseTx }: TaskTransaction = await mainnetAutomation.createBatchExecTask({
-            name: 'XChain DSR Oracle Ticker [Base]',
+        const { taskId: eventTaskId, tx: eventTx }: TaskTransaction = await mainnetAutomation.createBatchExecTask({
+            name: 'XChain DSR Oracle Ticker [Event Based]',
             web3FunctionHash: ipfsDeployment,
             web3FunctionArgs: {
-                forwarder: addresses.mainnet.dsrForwarders.base,
-                maxDelta: '', // Max rho delta
-                gasLimit: '500000',
-                isBridgingArbitrumStyle: false,
-                maxFeePerGas: '0',
-                baseFee: '0',
+                maxDelta: '', // TODO: Add reasonable max rho delta
+                gasLimit: '800000',
                 sendSlackMessages: true,
             },
             trigger: {
@@ -283,44 +279,36 @@ const deploy = async (w3fName: string, deploymentLogic: () => Promise<void>) => 
             },
         })
 
-        await baseTx.wait()
+        await eventTx.wait()
         await mainnetManagement.secrets.set(
             {
                 SLACK_WEBHOOK_URL: slackWebhookUrl,
             },
-            baseTaskId,
+            eventTaskId,
         )
 
-        const { taskId: optimismTaskId, tx: optimismTx }: TaskTransaction = await mainnetAutomation.createBatchExecTask(
+        const { taskId: timeTaskId, tx: timeTx }: TaskTransaction = await mainnetAutomation.createBatchExecTask(
             {
-                name: 'XChain DSR Oracle Ticker [Optimism]',
+                name: 'XChain DSR Oracle Ticker [Time Based]',
                 web3FunctionHash: ipfsDeployment,
                 web3FunctionArgs: {
-                    forwarder: addresses.mainnet.dsrForwarders.optimism,
-                    maxDelta: '', // Max rho delta
+                    maxDelta: '', // TODO: Add reasonable max rho delta
                     gasLimit: '500000',
-                    isBridgingArbitrumStyle: false,
-                    maxFeePerGas: '0',
-                    baseFee: '0',
                     sendSlackMessages: true,
                 },
                 trigger: {
-                    type: TriggerType.EVENT,
-                    filter: {
-                        address: addresses.mainnet.pauseProxy,
-                        topics: [[dsNoteInterface.getEventTopic('LogNote')]],
-                    },
-                    blockConfirmations: 0,
+                    type: TriggerType.TIME,
+                    interval: fiveMinutesInMilliseconds,
                 },
             },
         )
 
-        await optimismTx.wait()
+        await timeTx.wait()
         await mainnetManagement.secrets.set(
             {
                 SLACK_WEBHOOK_URL: slackWebhookUrl,
             },
-            optimismTaskId,
+            timeTaskId,
         )
     })
 })()
