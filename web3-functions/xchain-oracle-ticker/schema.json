@@ -5,6 +5,7 @@
     "timeout": 300,
     "userArgs": {
         "maxDelta": "string",
-        "gasLimit": "string"
+        "gasLimit": "string",
+        "sendSlackMessages": "boolean"
     }
 }
