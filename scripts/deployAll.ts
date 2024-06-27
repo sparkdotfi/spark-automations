@@ -287,21 +287,19 @@ const deploy = async (w3fName: string, deploymentLogic: () => Promise<void>) => 
             eventTaskId,
         )
 
-        const { taskId: timeTaskId, tx: timeTx }: TaskTransaction = await mainnetAutomation.createBatchExecTask(
-            {
-                name: 'XChain DSR Oracle Ticker [Time Based]',
-                web3FunctionHash: ipfsDeployment,
-                web3FunctionArgs: {
-                    maxDelta: '', // TODO: Add reasonable max rho delta
-                    gasLimit: '500000',
-                    sendSlackMessages: true,
-                },
-                trigger: {
-                    type: TriggerType.TIME,
-                    interval: fiveMinutesInMilliseconds,
-                },
+        const { taskId: timeTaskId, tx: timeTx }: TaskTransaction = await mainnetAutomation.createBatchExecTask({
+            name: 'XChain DSR Oracle Ticker [Time Based]',
+            web3FunctionHash: ipfsDeployment,
+            web3FunctionArgs: {
+                maxDelta: '', // TODO: Add reasonable max rho delta
+                gasLimit: '500000',
+                sendSlackMessages: true,
             },
-        )
+            trigger: {
+                type: TriggerType.TIME,
+                interval: fiveMinutesInMilliseconds,
+            },
+        })
 
         await timeTx.wait()
         await mainnetManagement.secrets.set(
