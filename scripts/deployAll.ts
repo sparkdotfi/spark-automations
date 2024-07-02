@@ -8,6 +8,8 @@ import { addresses } from '../utils'
 const hourInMilliseconds = 1000 * 60 * 60
 const fiveMinutesInMilliseconds = 1000 * 60 * 5
 
+const weekInSeconds = 60 * 60 * 24 * 7
+
 console.log('== Preparing a deployment of all the keeper actions ==')
 
 const keystorePath = process.argv[2] || (process.env.KEYSTORE_PATH as string)
@@ -265,7 +267,7 @@ const deploy = async (w3fName: string, deploymentLogic: () => Promise<void>) => 
             name: 'XChain DSR Oracle Ticker [Event Based]',
             web3FunctionHash: ipfsDeployment,
             web3FunctionArgs: {
-                maxDelta: '', // TODO: Add reasonable max rho delta
+                maxDelta: weekInSeconds.toString(),
                 gasLimit: '800000',
                 sendSlackMessages: true,
             },
@@ -291,8 +293,8 @@ const deploy = async (w3fName: string, deploymentLogic: () => Promise<void>) => 
             name: 'XChain DSR Oracle Ticker [Time Based]',
             web3FunctionHash: ipfsDeployment,
             web3FunctionArgs: {
-                maxDelta: '', // TODO: Add reasonable max rho delta
-                gasLimit: '500000',
+                maxDelta: weekInSeconds.toString(),
+                gasLimit: '800000',
                 sendSlackMessages: true,
             },
             trigger: {
