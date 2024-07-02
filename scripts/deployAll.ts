@@ -44,9 +44,8 @@ const gelatoDeployments = JSON.parse(fs.readFileSync('./scripts/deployments.json
 
 let ipfsDeployment: string
 let gelatoDeployment: string
-let wf3Name: string
 
-const deploy = async (w3fName: string, deploymentLogic: () => Promise<void>) => {
+const deploy = async (w3fName: string, deploymentLogic: (ipfsDeployment: string) => Promise<void>) => {
     ipfsDeployment = ipfsDeployments[w3fName]
     gelatoDeployment = gelatoDeployments[w3fName]
 
@@ -58,7 +57,7 @@ const deploy = async (w3fName: string, deploymentLogic: () => Promise<void>) => 
         console.log(`   * Skipping ${w3fName} deployment (already deployed)`)
     } else {
         console.log(`   * Deploying ${w3fName}...`)
-        await deploymentLogic()
+        await deploymentLogic(ipfsDeployment)
 
         gelatoDeployments[w3fName] = ipfsDeployment
         fs.writeFileSync('./scripts/deployments.json', JSON.stringify(gelatoDeployments, null, 4).concat('\n'))
@@ -69,7 +68,7 @@ const deploy = async (w3fName: string, deploymentLogic: () => Promise<void>) => 
     // *****************************************************************************************************************
     // ********** CAP AUTOMATOR ****************************************************************************************
     // *****************************************************************************************************************
-    await deploy('cap-automator', async () => {
+    await deploy('cap-automator', async (ipfsDeployment: string) => {
         const { taskId, tx }: TaskTransaction = await mainnetAutomation.createBatchExecTask({
             name: 'Cap Automator',
             web3FunctionHash: ipfsDeployment,
@@ -97,7 +96,7 @@ const deploy = async (w3fName: string, deploymentLogic: () => Promise<void>) => 
     // *****************************************************************************************************************
     // ********** D3M TICKER *******************************************************************************************
     // *****************************************************************************************************************
-    await deploy('d3m-ticker', async () => {
+    await deploy('d3m-ticker', async (ipfsDeployment: string) => {
         const { taskId, tx }: TaskTransaction = await mainnetAutomation.createBatchExecTask({
             name: 'D3M Ticker',
             web3FunctionHash: ipfsDeployment,
@@ -125,7 +124,7 @@ const deploy = async (w3fName: string, deploymentLogic: () => Promise<void>) => 
     // *****************************************************************************************************************
     // ********** GOVERNANCE EXECUTOR **********************************************************************************
     // *****************************************************************************************************************
-    await deploy('governance-executor', async () => {
+    await deploy('governance-executor', async (ipfsDeployment: string) => {
         const { taskId, tx }: TaskTransaction = await gnosisAutomation.createBatchExecTask({
             name: 'Governance Executor [Gnosis]',
             web3FunctionHash: ipfsDeployment,
@@ -151,7 +150,7 @@ const deploy = async (w3fName: string, deploymentLogic: () => Promise<void>) => 
     // *****************************************************************************************************************
     // ********** KILL SWITCH ******************************************************************************************
     // *****************************************************************************************************************
-    await deploy('kill-switch', async () => {
+    await deploy('kill-switch', async (ipfsDeployment: string) => {
         const aggregatorInterface = new ethers.utils.Interface(oracleAggregatorAbi)
 
         const wbtcBtcOracle = new ethers.Contract(addresses.mainnet.priceSources.wbtcBtc, oracleAbi, deployer)
@@ -235,7 +234,7 @@ const deploy = async (w3fName: string, deploymentLogic: () => Promise<void>) => 
     // *****************************************************************************************************************
     // ********** META MORPHO ******************************************************************************************
     // *****************************************************************************************************************
-    await deploy('meta-morpho', async () => {
+    await deploy('meta-morpho', async (ipfsDeployment: string) => {
         const { taskId, tx }: TaskTransaction = await mainnetAutomation.createBatchExecTask({
             name: 'Meta Morpho Cap Updater',
             web3FunctionHash: ipfsDeployment,
@@ -260,7 +259,7 @@ const deploy = async (w3fName: string, deploymentLogic: () => Promise<void>) => 
     // *****************************************************************************************************************
     // ********** XCHAIN ORACLE TICKER *********************************************************************************
     // *****************************************************************************************************************
-    await deploy('xchain-oracle-ticker', async () => {
+    await deploy('xchain-oracle-ticker', async (ipfsDeployment: string) => {
         const dsNoteInterface = new ethers.utils.Interface(dsNoteAbi)
 
         const { taskId: eventTaskId, tx: eventTx }: TaskTransaction = await mainnetAutomation.createBatchExecTask({
