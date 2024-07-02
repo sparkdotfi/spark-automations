@@ -1,9 +1,5 @@
 {
-    "forwarder": "0x0",
     "maxDelta": "0",
     "gasLimit": "0",
-    "isBridgingArbitrumStyle": false,
-    "maxFeePerGas": "0",
-    "baseFee": "0",
     "sendSlackMessages": false
 }

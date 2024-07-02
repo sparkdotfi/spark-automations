@@ -24,7 +24,9 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
         fromBlock: 19875940,
     })
 
-    const marketIds = logs.map((log) => metaMorpho.interface.parseLog(log)).map((parsedLog) => parsedLog.args.id)
+    const marketIds = Array.from(
+        new Set(logs.map((log) => metaMorpho.interface.parseLog(log)).map((parsedLog) => parsedLog.args.id)),
+    )
 
     const multicallCalls: Array<{ target: string; callData: string }> = []
 

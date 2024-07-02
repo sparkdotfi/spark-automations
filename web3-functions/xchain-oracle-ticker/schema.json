@@ -4,12 +4,8 @@
     "memory": 128,
     "timeout": 300,
     "userArgs": {
-        "forwarder": "string",
         "maxDelta": "string",
         "gasLimit": "string",
-        "isBridgingArbitrumStyle": "boolean",
-        "maxFeePerGas": "string",
-        "baseFee": "string",
         "sendSlackMessages": "boolean"
     }
 }
