@@ -1,4 +1,5 @@
 import * as fs from 'fs'
+import * as readline from 'readline'
 import { ethers } from 'ethers'
 import { AutomateSDK, TaskTransaction, TriggerType, Web3Function } from '@gelatonetwork/automate-sdk'
 
@@ -10,6 +11,19 @@ const fiveMinutesInMilliseconds = 1000 * 60 * 5
 
 const weekInSeconds = 60 * 60 * 24 * 7
 
+const prompter = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+})
+
+const pause = () => {
+    return new Promise<void>((resolve) => {
+        prompter.question('Press ENTER to confirm & continue...', () => {
+            resolve()
+        })
+    })
+}
+
 console.log('== Preparing a deployment of all the keeper actions ==')
 
 const keystorePath = process.argv[2] || (process.env.KEYSTORE_PATH as string)
@@ -18,12 +32,6 @@ const passwordPath = process.argv[3] || (process.env.PASSWORD_PATH as string)
 const password = passwordPath ? fs.readFileSync(passwordPath, 'utf8').slice(0, -1) : ''
 const keystore = fs.readFileSync(keystorePath, 'utf8')
 const deployer = ethers.Wallet.fromEncryptedJsonSync(keystore, password)
-
-const mainnetAutomation = new AutomateSDK(1, deployer)
-const mainnetManagement = new Web3Function(1, deployer)
-
-const gnosisAutomation = new AutomateSDK(100, deployer)
-const gnosisManagement = new Web3Function(100, deployer)
 
 const slackWebhookUrl = process.env.GELATO_KEEPERS_SLACK_WEBHOOK_URL
 if (!slackWebhookUrl) {
@@ -37,7 +45,32 @@ if (!etherscanApiKey) {
     process.exit(1)
 }
 
-console.log('   * Deployer: ', deployer.address)
+const mainnetRpcUrl = process.env.MAINNET_RPC_URL
+if (!mainnetRpcUrl) {
+    console.error('Set a valid value for MAINNET_RPC_URL')
+    process.exit(1)
+}
+
+const gnosisRpcUrl = process.env.GNOSIS_CHAIN_RPC_URL
+if (!gnosisRpcUrl) {
+    console.error('Set a valid value for GNOSIS_CHAIN_RPC_URL')
+    process.exit(1)
+}
+
+console.log('   * Deployer:          ', deployer.address)
+console.log('   * Slack Webhook URL: ', slackWebhookUrl)
+console.log('   * Etherscan API Key: ', etherscanApiKey)
+console.log('   * Mainnet RPC URL:   ', mainnetRpcUrl)
+console.log('   * Gnosis RPC URL:    ', gnosisRpcUrl)
+
+const mainnetDeployer = new ethers.Wallet(deployer.privateKey, new ethers.providers.JsonRpcProvider(mainnetRpcUrl))
+const gnosisDeployer = new ethers.Wallet(deployer.privateKey, new ethers.providers.JsonRpcProvider(gnosisRpcUrl))
+
+const mainnetAutomation = new AutomateSDK(1, mainnetDeployer)
+const mainnetManagement = new Web3Function(1, mainnetDeployer)
+
+const gnosisAutomation = new AutomateSDK(100, gnosisDeployer)
+const gnosisManagement = new Web3Function(100, gnosisDeployer)
 
 const ipfsDeployments = JSON.parse(fs.readFileSync('./scripts/pre-deployments.json'))
 const gelatoDeployments = JSON.parse(fs.readFileSync('./scripts/deployments.json'))
@@ -56,15 +89,19 @@ const deploy = async (w3fName: string, deploymentLogic: (ipfsDeployment: string)
     } else if (ipfsDeployment == gelatoDeployment) {
         console.log(`   * Skipping ${w3fName} deployment (already deployed)`)
     } else {
+        console.log(`   * Deployment of ${w3fName} to be executed (IPFS hash: ${ipfsDeployment})`)
+        await pause()
         console.log(`   * Deploying ${w3fName}...`)
         await deploymentLogic(ipfsDeployment)
+        console.log(`   * Deployed ${w3fName} successfully!`)
 
         gelatoDeployments[w3fName] = ipfsDeployment
         fs.writeFileSync('./scripts/deployments.json', JSON.stringify(gelatoDeployments, null, 4).concat('\n'))
     }
 }
-
 ;(async () => {
+    await pause()
+
     // *****************************************************************************************************************
     // ********** CAP AUTOMATOR ****************************************************************************************
     // *****************************************************************************************************************
@@ -153,7 +190,7 @@ const deploy = async (w3fName: string, deploymentLogic: (ipfsDeployment: string)
     await deploy('kill-switch', async (ipfsDeployment: string) => {
         const aggregatorInterface = new ethers.utils.Interface(oracleAggregatorAbi)
 
-        const wbtcBtcOracle = new ethers.Contract(addresses.mainnet.priceSources.wbtcBtc, oracleAbi, deployer)
+        const wbtcBtcOracle = new ethers.Contract(addresses.mainnet.priceSources.wbtcBtc, oracleAbi, mainnetDeployer)
         const wbtcBtcAggregator = await wbtcBtcOracle.aggregator()
 
         const { taskId: wbtcBtcTaskId, tx: wbtcBtcTx }: TaskTransaction = await mainnetAutomation.createBatchExecTask({
@@ -180,7 +217,7 @@ const deploy = async (w3fName: string, deploymentLogic: (ipfsDeployment: string)
             wbtcBtcTaskId,
         )
 
-        const stethEthOracle = new ethers.Contract(addresses.mainnet.priceSources.stethEth, oracleAbi, deployer)
+        const stethEthOracle = new ethers.Contract(addresses.mainnet.priceSources.stethEth, oracleAbi, mainnetDeployer)
         const stethEthAggregator = await stethEthOracle.aggregator()
 
         const { taskId: stethEthTaskId, tx: stethEthTx }: TaskTransaction = await mainnetAutomation.createBatchExecTask(
@@ -310,4 +347,6 @@ const deploy = async (w3fName: string, deploymentLogic: (ipfsDeployment: string)
             timeTaskId,
         )
     })
+
+    prompter.close()
 })()
