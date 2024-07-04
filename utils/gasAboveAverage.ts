@@ -11,16 +11,18 @@ export const formatDateArguments = (date: Date): { today: string; yesterday: str
 export const gasAboveAverage =
     (axios: AxiosInstance, apiKey: string, currentGasPrice: bigint) => async (): Promise<boolean> => {
         const formattedDateArguments = formatDateArguments(new Date())
-        console.log('formattedDateArguments', formattedDateArguments)
+
         const {
             data: { result },
         } = await axios.get(
             `https://api.etherscan.io/api?module=stats&action=dailyavggasprice&startdate=${formattedDateArguments.yesterday}&enddate=${formattedDateArguments.today}&sort=asc&apikey=${apiKey}`,
         )
 
-        console.log('result', result)
-
         const averageGasPrice = BigInt(result[0].avgGasPrice_Wei)
+
+        console.log('Dates: ', formattedDateArguments)
+        console.log('Etherscan API call results:', result)
+        console.log('Current gas price: ', currentGasPrice)
 
         return currentGasPrice > averageGasPrice
     }
