@@ -75,6 +75,9 @@ const gnosisManagement = new Web3Function(100, gnosisDeployer)
 const ipfsDeployments = JSON.parse(fs.readFileSync('./scripts/pre-deployments.json'))
 const gelatoDeployments = JSON.parse(fs.readFileSync('./scripts/deployments.json'))
 
+const deploymentDate = new Date().toISOString()
+const deploymentTag = ` <${deploymentDate.slice(0, 10)} ${deploymentDate.slice(11, 19)}>`
+
 let ipfsDeployment: string
 let gelatoDeployment: string
 
@@ -99,6 +102,20 @@ const deploy = async (w3fName: string, deploymentLogic: (ipfsDeployment: string)
         fs.writeFileSync('./scripts/deployments.json', JSON.stringify(gelatoDeployments, null, 4).concat('\n'))
     }
 }
+
+const retirePreviouslyDeployedTasks = async (automation: AutomateSDK, taskNames: Array<string>) => {
+    const activeTasks = await automation.getActiveTasks()
+
+    const tasksToRetire = activeTasks.filter((task) => taskNames.includes(task.name.slice(0, -deploymentTag.length)))
+
+    for (const task of tasksToRetire) {
+        console.log(`   * Retiring ${task.name}...`)
+        const { tx } = await automation.cancelTask(task.taskId)
+        await tx.wait()
+        console.log(`   * ${task.name} retired successfully!`)
+    }
+}
+
 ;(async () => {
     await pause()
 
@@ -106,8 +123,12 @@ const deploy = async (w3fName: string, deploymentLogic: (ipfsDeployment: string)
     // ********** CAP AUTOMATOR ****************************************************************************************
     // *****************************************************************************************************************
     await deploy('cap-automator', async (ipfsDeployment: string) => {
+        const taskNames = ['Cap Automator']
+
+        await retirePreviouslyDeployedTasks(mainnetAutomation, taskNames)
+
         const { taskId, tx }: TaskTransaction = await mainnetAutomation.createBatchExecTask({
-            name: 'Cap Automator',
+            name: taskNames[0].concat(deploymentTag),
             web3FunctionHash: ipfsDeployment,
             web3FunctionArgs: {
                 threshold: 5000, // less than 5.000bps (50%) of the gap left under the cap
@@ -134,8 +155,12 @@ const deploy = async (w3fName: string, deploymentLogic: (ipfsDeployment: string)
     // ********** D3M TICKER *******************************************************************************************
     // *****************************************************************************************************************
     await deploy('d3m-ticker', async (ipfsDeployment: string) => {
+        const taskNames = ['D3M Ticker']
+
+        await retirePreviouslyDeployedTasks(mainnetAutomation, taskNames)
+
         const { taskId, tx }: TaskTransaction = await mainnetAutomation.createBatchExecTask({
-            name: 'D3M Ticker',
+            name: taskNames[0].concat(deploymentTag),
             web3FunctionHash: ipfsDeployment,
             web3FunctionArgs: {
                 threshold: '20000000000000000000000000', // 20M DAI (20.000.000e18 DAI)
@@ -162,8 +187,12 @@ const deploy = async (w3fName: string, deploymentLogic: (ipfsDeployment: string)
     // ********** GOVERNANCE EXECUTOR **********************************************************************************
     // *****************************************************************************************************************
     await deploy('governance-executor', async (ipfsDeployment: string) => {
+        const taskNames = ['Governance Executor [Gnosis]']
+
+        await retirePreviouslyDeployedTasks(gnosisAutomation, taskNames)
+
         const { taskId, tx }: TaskTransaction = await gnosisAutomation.createBatchExecTask({
-            name: 'Governance Executor [Gnosis]',
+            name: taskNames[0].concat(deploymentTag),
             web3FunctionHash: ipfsDeployment,
             web3FunctionArgs: {
                 domain: 'gnosis',
@@ -188,13 +217,17 @@ const deploy = async (w3fName: string, deploymentLogic: (ipfsDeployment: string)
     // ********** KILL SWITCH ******************************************************************************************
     // *****************************************************************************************************************
     await deploy('kill-switch', async (ipfsDeployment: string) => {
+        const taskNames = ['Kill Switch [WBTC-BTC]', 'Kill Switch [stETH-ETH]', 'Kill Switch [Time Based]']
+
+        await retirePreviouslyDeployedTasks(mainnetAutomation, taskNames)
+
         const aggregatorInterface = new ethers.utils.Interface(oracleAggregatorAbi)
 
         const wbtcBtcOracle = new ethers.Contract(addresses.mainnet.priceSources.wbtcBtc, oracleAbi, mainnetDeployer)
         const wbtcBtcAggregator = await wbtcBtcOracle.aggregator()
 
         const { taskId: wbtcBtcTaskId, tx: wbtcBtcTx }: TaskTransaction = await mainnetAutomation.createBatchExecTask({
-            name: 'Kill Switch [WBTC-BTC]',
+            name: taskNames[0].concat(deploymentTag),
             web3FunctionHash: ipfsDeployment,
             web3FunctionArgs: {
                 sendSlackMessages: true,
@@ -222,7 +255,7 @@ const deploy = async (w3fName: string, deploymentLogic: (ipfsDeployment: string)
 
         const { taskId: stethEthTaskId, tx: stethEthTx }: TaskTransaction = await mainnetAutomation.createBatchExecTask(
             {
-                name: 'Kill Switch [stETH-ETH]',
+                name: taskNames[1].concat(deploymentTag),
                 web3FunctionHash: ipfsDeployment,
                 web3FunctionArgs: {
                     sendSlackMessages: true,
@@ -248,7 +281,7 @@ const deploy = async (w3fName: string, deploymentLogic: (ipfsDeployment: string)
 
         const { taskId: timeBasedTaskId, tx: timeBasedTx }: TaskTransaction =
             await mainnetAutomation.createBatchExecTask({
-                name: 'Kill Switch [Time Based]',
+                name: taskNames[2].concat(deploymentTag),
                 web3FunctionHash: ipfsDeployment,
                 web3FunctionArgs: {
                     sendSlackMessages: true,
@@ -272,8 +305,12 @@ const deploy = async (w3fName: string, deploymentLogic: (ipfsDeployment: string)
     // ********** META MORPHO ******************************************************************************************
     // *****************************************************************************************************************
     await deploy('meta-morpho', async (ipfsDeployment: string) => {
+        const taskNames = ['Meta Morpho Cap Updater']
+
+        await retirePreviouslyDeployedTasks(mainnetAutomation, taskNames)
+
         const { taskId, tx }: TaskTransaction = await mainnetAutomation.createBatchExecTask({
-            name: 'Meta Morpho Cap Updater',
+            name: taskNames[0].concat(deploymentTag),
             web3FunctionHash: ipfsDeployment,
             web3FunctionArgs: {
                 sendSlackMessages: true,
@@ -297,10 +334,14 @@ const deploy = async (w3fName: string, deploymentLogic: (ipfsDeployment: string)
     // ********** XCHAIN ORACLE TICKER *********************************************************************************
     // *****************************************************************************************************************
     await deploy('xchain-oracle-ticker', async (ipfsDeployment: string) => {
+        const taskNames = ['XChain Oracle Ticker [Event Based]', 'XChain Oracle Ticker [Time Based]']
+
+        await retirePreviouslyDeployedTasks(mainnetAutomation, taskNames)
+
         const dsNoteInterface = new ethers.utils.Interface(dsNoteAbi)
 
         const { taskId: eventTaskId, tx: eventTx }: TaskTransaction = await mainnetAutomation.createBatchExecTask({
-            name: 'XChain DSR Oracle Ticker [Event Based]',
+            name: taskNames[0].concat(deploymentTag),
             web3FunctionHash: ipfsDeployment,
             web3FunctionArgs: {
                 maxDelta: weekInSeconds.toString(),
@@ -326,7 +367,7 @@ const deploy = async (w3fName: string, deploymentLogic: (ipfsDeployment: string)
         )
 
         const { taskId: timeTaskId, tx: timeTx }: TaskTransaction = await mainnetAutomation.createBatchExecTask({
-            name: 'XChain DSR Oracle Ticker [Time Based]',
+            name: taskNames[1].concat(deploymentTag),
             web3FunctionHash: ipfsDeployment,
             web3FunctionArgs: {
                 maxDelta: weekInSeconds.toString(),
