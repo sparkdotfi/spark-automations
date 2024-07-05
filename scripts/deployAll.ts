@@ -26,8 +26,8 @@ const pause = () => {
 
 console.log('== Preparing a deployment of all the keeper actions ==')
 
-const keystorePath = process.argv[2] || (process.env.KEYSTORE_PATH as string)
-const passwordPath = process.argv[3] || (process.env.PASSWORD_PATH as string)
+const keystorePath = process.argv[2] || (process.env.GELATO_KEYSTORE_PATH as string)
+const passwordPath = process.argv[3] || (process.env.GELATO_PASSWORD_PATH as string)
 
 const password = passwordPath ? fs.readFileSync(passwordPath, 'utf8').slice(0, -1) : ''
 const keystore = fs.readFileSync(keystorePath, 'utf8')
