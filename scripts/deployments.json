@@ -1,6 +1,8 @@
 {
-    "governance-executor": "QmbXv7R8x75sfNngGn3pd94gTUQKzYdkdrnj6aKUotWYhY",
-    "meta-morpho": "QmW7Z2EAH3TXV7YajacHysWbdD4Z7M1rY95YTN1wwY4MJt",
-    "xchain-oracle-ticker": "QmSVatWQcc6eBEUt9jEVbEMmB3LAu3YfUgX1Nc3XoHZxWU",
-    "cap-automator": "QmRD21DGRw5DjGw5erNYyRw4sAgeDhxFuBNSAtUpuvMJvw"
+    "cap-automator": "QmRD21DGRw5DjGw5erNYyRw4sAgeDhxFuBNSAtUpuvMJvw",
+    "d3m-ticker": "QmeCa3vvP5BWW7jCSsoVJiMyBdVLtXK78j7yRuigSx3Y9c",
+    "governance-executor": "Qmedr8XN8jrUWRSRbpT7CgtQJNwMuAwBHR2PntBuuimu76",
+    "kill-switch": "Qmf5LrKcK8aucBBw6XhB4VwNT26ytEXbuR1HRdugyUqRWK",
+    "meta-morpho": "QmcSncQABR9GzKEuqmgf6Q11DvTWART3Ea36YLmfWoAWns",
+    "xchain-oracle-ticker": "QmSVatWQcc6eBEUt9jEVbEMmB3LAu3YfUgX1Nc3XoHZxWU"
 }
