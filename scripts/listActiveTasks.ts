@@ -1,7 +1,6 @@
 import * as fs from 'fs'
 import { ethers } from 'ethers'
 import { AutomateSDK } from '@gelatonetwork/automate-sdk'
-
 ;(async () => {
     const mainnetRpcUrl = process.env.MAINNET_RPC_URL
     if (!mainnetRpcUrl) {
