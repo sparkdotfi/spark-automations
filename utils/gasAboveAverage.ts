@@ -20,9 +20,5 @@ export const gasAboveAverage =
 
         const averageGasPrice = BigInt(result[0].avgGasPrice_Wei)
 
-        console.log('Dates: ', formattedDateArguments)
-        console.log('Etherscan API call results:', result)
-        console.log('Current gas price: ', currentGasPrice)
-
         return currentGasPrice > averageGasPrice
     }
