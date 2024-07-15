@@ -1,7 +1,10 @@
+import * as dotenv from 'dotenv'
 import * as fs from 'fs'
 import { ethers } from 'ethers'
 import { AutomateSDK } from '@gelatonetwork/automate-sdk'
 ;(async () => {
+    dotenv.config()
+
     const mainnetRpcUrl = process.env.MAINNET_RPC_URL
     if (!mainnetRpcUrl) {
         console.error('Set a valid value for MAINNET_RPC_URL')

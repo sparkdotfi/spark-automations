@@ -1,3 +1,4 @@
+import * as dotenv from 'dotenv'
 import * as fs from 'fs'
 import * as readline from 'readline'
 import { ethers } from 'ethers'
@@ -10,6 +11,8 @@ const hourInMilliseconds = 1000 * 60 * 60
 const fiveMinutesInMilliseconds = 1000 * 60 * 5
 
 const weekInSeconds = 60 * 60 * 24 * 7
+
+dotenv.config()
 
 const prompter = readline.createInterface({
     input: process.stdin,

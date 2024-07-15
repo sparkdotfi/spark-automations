@@ -1,10 +1,13 @@
+import * as dotenv from 'dotenv'
 import * as fs from 'fs'
 import { ethers } from 'ethers'
 
+dotenv.config()
+
 console.log('== Testing access to the deployer key ==')
 
-const keystorePath = process.argv[2] || (process.env.KEYSTORE_PATH as string)
-const passwordPath = process.argv[3] || (process.env.PASSWORD_PATH as string)
+const keystorePath = process.argv[2] || (process.env.GELATO_KEYSTORE_PATH as string)
+const passwordPath = process.argv[3] || (process.env.GELATO_PASSWORD_PATH as string)
 
 console.log('   * Keystore path:', keystorePath)
 console.log('   * Password path:', passwordPath || 'No password path provided')
