@@ -1,437 +1,110 @@
-# Web3 Functions Template <!-- omit in toc -->
+#  ⚡️🦾 Spark Keepers ⚡️🦾
 
-Use this template to write, test and deploy Web3 Functions.
+This repository contains all Keepers used in the Spark ecosystem to executed automated transactions. Powered by Gelato.
 
-## What are Web3 Functions?
+## 🏎️😤 TLDR
+1. Make sure to have `yarn` and `node` installed
+2. Run `yarn install` to install dependencies
+3. Run `yarn test` to run tests
+4. Set all necessary environment variables
+5. Run `yarn gelato:ipfs <NAME_OF_THE_KEEPER_CODE_FOLDER>` for every keeper type
+6. Run `yarn gelato:deploy` to deploy all of the keepers
 
-Web3 Functions are decentralized cloud functions that work similarly to AWS Lambda or Google Cloud, just for web3. They enable developers to execute on-chain transactions based on arbitrary off-chain data (APIs / subgraphs, etc) & computation. These functions are written in Typescript, stored on IPFS and run by Gelato.
+## ⚙️🧰 Project Setup
 
-## Documentation
+### ✏️ Prerequisites
+In order to install the project and run scripts you need to have `node` and `yarn` installed on your machine.
+There are no specific versioning requirements, but version `node 20.12.2` and `yarn 1.22.19` are proved to be working.
 
-You can find the official Web3 Functions documentation [here](https://docs.gelato.network/developer-services/web3-functions).
-
-## Private Beta Restriction
-
-Web3 Functions are currently in private Beta and can only be used by whitelisted users. If you would like to be added to the waitlist, please reach out to the team on [Discord](https://discord.com/invite/ApbA39BKyJ) or apply using this [form](https://form.typeform.com/to/RrEiARiI).
-
-## Table of Content
-
--   [What are Web3 Functions?](#what-are-web3-functions)
--   [Documentation](#documentation)
--   [Private Beta Restriction](#private-beta-restriction)
--   [Table of Content](#table-of-content)
--   [Project Setup](#project-setup)
--   [Hardhat Config](#hardhat-config)
--   [Write a Web3 Function](#write-a-web3-function)
--   [Test your web3 function](#test-your-web3-function)
-    -   [Calling your web3 function](#calling-your-web3-function)
-    -   [Writing unit test for your web3 function](#writing-unit-test-for-your-web3-function)
--   [Use User arguments](#use-user-arguments)
--   [Use State / Storage](#use-state--storage)
--   [Use user secrets](#use-user-secrets)
--   [Deploy your Web3Function on IPFS](#deploy-your-web3function-on-ipfs)
--   [Create your Web3Function task](#create-your-web3function-task)
--   [More examples](#more-examples)
-    -   [Coingecko oracle](#coingecko-oracle)
-    -   [Event listener](#event-listener)
-    -   [Secrets](#secrets)
-    -   [Advertising Board](#advertising-board)
-
-## Project Setup
-
-1. Install project dependencies
+### 🗜️ Install project dependencies
 
 ```
 yarn install
 ```
 
-2. Configure your local environment:
+### 📚 Configure your local environment:
 
--   Copy `.env.example` to init your own `.env` file
+Create your own `.env` file and complete it with these settings
 
+```bash
+ALCHEMY_ID= # API key used to create forked test environments
+PRIVATE_KEY= # API key used to create forked test environments
+GELATO_KEYSTORE_PATH= # absolute path to a keystore wallet that will manage your deployments
+GELATO_PASSWORD_PATH= # absolute path to a keystore wallet password
+GELATO_KEEPERS_SLACK_WEBHOOK_URL= # Slack Webhook URL that will be used by the keepers to send notifications
+GELATO_KEEPERS_ETHERSCAN_API_KEY= # paid Etherscan API key that will be used by the keepers to query historical gas prices
 ```
-cp .env.example .env
-```
-
--   Complete your `.env` file with your private settings
-
-```
-ALCHEMY_ID=
-PRIVATE_KEY=
-```
-
-## Hardhat Config
-
-In `hardhat.config.ts`, you can set up configurations for your Web3 Function runtime.
-
--   `rootDir`: Directory which contains all web3 functions directories.
--   `debug`: Run your web3 functions with debug mode on.
--   `networks`: Provider of these networks will be injected into web3 function's multi chain provider.
-
-```ts
-  w3f: {
-    rootDir: "./web3-functions",
-    debug: false,
-    networks: ["mumbai", "goerli", "baseGoerli"],
-  },
+Additionally if you don't have these variables set in your environment, add:
+```bash
+MAINNET_RPC_URL= # complete Ethereum Mainnet RPC URL that will be used for keeper deployments
+GNOSIS_CHAIN_RPC_URL= # complete Gnosis Chain RPC URL that will be used for keeper deployments
 ```
 
-## Write a Web3 Function
-
--   Go to `web3-functions/index.ts`
--   Write your Web3 Function logic within the `Web3Function.onRun` function.
--   Example:
-
-```typescript
-import { Web3Function, Web3FunctionContext } from '@gelatonetwork/web3-functions-sdk'
-import { Contract } from '@ethersproject/contracts'
-import ky from 'ky' // we recommend using ky as axios doesn't support fetch by default
-
-const ORACLE_ABI = ['function lastUpdated() external view returns(uint256)', 'function updatePrice(uint256)']
-
-Web3Function.onRun(async (context: Web3FunctionContext) => {
-    const { userArgs, gelatoArgs, multiChainProvider } = context
-
-    const provider = multiChainProvider.default()
-
-    // Retrieve Last oracle update time
-    const oracleAddress = '0x71B9B0F6C999CBbB0FeF9c92B80D54e4973214da'
-    const oracle = new Contract(oracleAddress, ORACLE_ABI, provider)
-    const lastUpdated = parseInt(await oracle.lastUpdated())
-    console.log(`Last oracle update: ${lastUpdated}`)
-
-    // Check if it's ready for a new update
-    const nextUpdateTime = lastUpdated + 300 // 5 min
-    const timestamp = (await provider.getBlock('latest')).timestamp
-    console.log(`Next oracle update: ${nextUpdateTime}`)
-    if (timestamp < nextUpdateTime) {
-        return { canExec: false, message: `Time not elapsed` }
-    }
-
-    // Get current price on coingecko
-    const currency = 'ethereum'
-    const priceData: any = await ky
-        .get(`https://api.coingecko.com/api/v3/simple/price?ids=${currency}&vs_currencies=usd`, {
-            timeout: 5_000,
-            retry: 0,
-        })
-        .json()
-    price = Math.floor(priceData[currency].usd)
-    console.log(`Updating price: ${price}`)
-
-    // Return execution call data
-    return {
-        canExec: true,
-        callData: [
-            {
-                to: oracleAddress,
-                data: oracle.interface.encodeFunctionData('updatePrice', [price]),
-            },
-        ],
-    }
-})
+## ⚖️👀 Testing
+In order to run all the tests, run:
+```bash
+yarn test
+```
+Alternatively, in order to run only part of the tests, run on of the following:
+```bash
+yarn test:mainnet # tests on mainnet fork for keepers operating on mainnet
+yarn test:gnosis # tests on gnosis chain fork for keepers operating on gnosis chain
+yarn test:utils # tests of utils, not executed on forked environment
 ```
 
--   Each Web3 Function has a `schema.json` file to specify the runtime configuration. In later versions you will have more optionality to define what resources your Web3 Function requires.
+## 🚢🚀 Deployment
 
-```json
-{
-    "web3FunctionVersion": "2.0.0",
-    "runtime": "js-1.0",
-    "memory": 128,
-    "timeout": 30,
-    "userArgs": {}
-}
+Deployment of a keeper consists of 2 subsequent steps.
+1. The code of the keeper has to be uploaded to IPFS
+2. An on-chain instance of a keeper running a code deployed at a specific IPFS address with proper arguments needs to be created and secrets needed to operate the keeper need to be set.
+
+### 🌐 IPFS Deployment
+The code of each of the keeper types needs to be separately deployed by running the following command:
+```bash
+yarn gelato:ipfs <NAME_OF_THE_KEEPER_CODE_FOLDER> # i.e. yarn gelato:ipfs governance-executor
 ```
+As a result, the newly created IPFS deployment address will be stored in the `pre-deployments.json` file.
 
-## Test your web3 function
+This command should be re-run for each of the keeper types, whenever there is a meaningful code change, that will require keeper redeployment.
 
-### Calling your web3 function
-
--   Use `npx hardhat w3f-run W3FNAME` command to test your function (replace W3FNAME with the folder name containing your web3 function)
-
--   Options:
-
-    -   `--logs` Show internal Web3 Function logs
-    -   `--debug` Show Runtime debug messages
-    -   `--network [NETWORK]` Set the default runtime network & provider.
-
-If your web3 function has arguments, you can define them in [`hardhat.config.ts`](./hardhat.config.ts).
-
-Example:<br/> `npx hardhat w3f-run oracle --logs`
-
-Output:
-
+### ⛓️ On-Chain Deployment
+In order to spin-up operating instances of keepers running the code previously deployed to IPFS, run the following command (make sure to have all of the environment variables properly set):
+```bash
+yarn gelato:deploy
 ```
-Web3Function building...
+This script will check the contents of the `pre-deployments.json` file and the `deployments.json` file and determine for which keeper types to run the actual deployment script. The deployment will not be triggered if there is no IPFS deployment address for a given keeper, or the the IPFS deployment address in the `pre-deployments.json` file matches the one in the `deployments.json` file, which means, that this version of the keeper code was already deployed. Otherwise, the deployment will be performed.
 
-Web3Function Build result:
-✓ Schema: web3-functions/examples/oracle/schema.json
-✓ Built file: ./.tmp/index.js
-✓ File size: 2.46mb
-✓ Build time: 255.66ms
+The exact number of instances, their names, arguments, and configuration are defined in the script. The arguments used to spin-up the keeper are passed along with the deployment transaction and can only be changed by redeploying the keeper instance. Secrets are set in separate transactions, after the initial deployment and their value can be changed at any time via UI or a script.
 
-Web3Function user args validation:
-✓ currency: ethereum
-✓ oracle: 0x71B9B0F6C999CBbB0FeF9c92B80D54e4973214da
+Any time there is a need to deploy a keeper instance with a name that already occurs among the list of deployed and active keeper instances, the previously running one will be cancelled first.
 
-Web3Function running...
+All keepers when deployed get a tag with a date and time of the deployment for the easy of identification. This tag, despite being added to the instance name, doesn't interfere with detecting already deployed instances.
+## 🪚🖍️ Misc
 
-Web3Function Result:
-✓ Return value: { canExec: false, message: 'Rpc call failed' }
-
-Web3Function Runtime stats:
-✓ Duration: 0.41s
-✓ Memory: 65.65mb
-✓ Rpc calls: 2
+### 🔑 Key Check
+In order to make sure that your keystore paths are configured correctly run:
+```bash
+yarn gelato:checkKey
 ```
+This script will try to access the key that variables `GELATO_KEYSTORE_PATH` and `GELATO_PASSWORD_PATH` point to and will print the address that was decrypted
 
-### Writing unit test for your web3 function
-
--   Define your tests in `test/index.test.ts`
--   Use `yarn test` command to run unit test suite.
-
-Hardhat will run your tests in a forked environment by default. You can configure this in `hardhat.config.ts`.
-
-```typescript
-{
-  defaultNetwork: "hardhat",
-
-  networks: {
-    hardhat: {
-      forking: {
-        url: `https://eth-goerli.g.alchemy.com/v2/${ALCHEMY_ID}`,
-        blockNumber: 8664000,
-      },
-    },
-  }
-}
+### 📜 Active Keepers List
+In order to list all currently active Keepers run:
+```bash
+yarn gelato:list
 ```
-
-`w3f` class is injected into the hardhat runtime environment.
-
-<br/>
-Calling your web3 function:
-
-```ts
-import hre from 'hardhat'
-const { w3f } = hre
-
-const oracleW3f = w3f.get('oracle')
-
-const userArgs = {
-    currency: 'ethereum',
-    oracle: oracle.address,
-}
-
-const storage = {}
-
-await oracleW3f.run({ storage, userArgs })
+This command will list all of the currently running Keepers' names and ids.
+An example output:
 ```
-
-`userArgs` and `storage` are optional here. When passed, it overrides the arguments defined in `userArgs.json` and `storage.json`.
-
-## Use User arguments
-
-1. Declare your expected `userArgs` in your schema, accepted types are 'string', 'string[]', 'number', 'number[]', 'boolean', 'boolean[]':
-
-```json
-{
-    "web3FunctionVersion": "2.0.0",
-    "runtime": "js-1.0",
-    "memory": 128,
-    "timeout": 30,
-    "userArgs": {
-        "currency": "string",
-        "oracle": "string"
-    }
-}
+== All Mainnet active tasks ==
+    * 0x86a3b5ace771d3f72c3d503f404feda8498e619e779b9ff8cf704c1bb29f3c72 (Cap Automator <2024-07-05 12:39:41>)
+    * 0xcf37bd51007aac73ec064210be4c36350c432041a47832d228d68f0607c5ea43 (D3M Ticker <2024-07-05 13:20:54>)
+    * 0x588bb33b6febb264874f28910b393c7721058bf57e2facc20172e4c69545a9b5 (Kill Switch [WBTC-BTC] <2024-07-05 13:20:54>)
+    * 0x28327d6869f95c33a60039adc1bdc2fe8b3d9a99233783d9c2be1aa91cd0705e (Kill Switch [stETH-ETH] <2024-07-05 13:20:54>)
+    * 0xc5f5efc13488dba28a7b52825ac999e61ef1394364753c5edd52538455057466 (Kill Switch [Time Based] <2024-07-05 13:20:54>)
+    * 0x2fa983a886a1be37c1c3cab81f0a7a8b53554f86969f39f877d5e02874514fd4 (Meta Morpho Cap Updater <2024-07-05 13:20:54>)
+    * 0xb64de6a9f653235f3dd88792534fbb57a15929049468c0b376f6f0cd5426b8b2 (XChain Oracle Ticker [Event Based] <2024-07-05 13:20:54>)
+    * 0x2cf5644493187b2790093ff7c881d73087fb876630193c78c23ac55daee405ab (XChain Oracle Ticker [Time Based] <2024-07-05 13:20:54>)
+== All Gnosis active tasks ==
+    * 0x95664d04fbc188fe4e322c40adeea7e8b58703360553db7676e4a0ec799dcd6c (Governance Executor [Gnosis] <2024-07-05 13:20:54>)
 ```
-
-2. Access your `userArgs` from the Web3Function context:
-
-```typescript
-Web3Function.onRun(async (context: Web3FunctionContext) => {
-    const { userArgs, gelatoArgs, secrets } = context
-
-    // User args:
-    console.log('Currency:', userArgs.currency)
-    console.log('Oracle:', userArgs.oracle)
-})
-```
-
-3. Populate `userArgs` in `userArgs.json` and test your web3 function:
-
-```json
-{
-    "currency": "ethereum",
-    "oracle": "0x71B9B0F6C999CBbB0FeF9c92B80D54e4973214da"
-}
-```
-
-```
-npx hardhat w3f-run oracle --logs
-```
-
-## Use State / Storage
-
-Web3Functions are stateless scripts, that will run in a new & empty memory context on every execution.
-If you need to manage some state variable, we provide a simple key/value store that you can access from your web3 function `context`.
-
-See the below example to read & update values from your storage:
-
-```typescript
-import { Web3Function, Web3FunctionContext } from '@gelatonetwork/web3-functions-sdk'
-
-Web3Function.onRun(async (context: Web3FunctionContext) => {
-    const { storage, multiChainProvider } = context
-
-    const provider = multiChainProvider.default()
-
-    // Use storage to retrieve previous state (stored values are always string)
-    const lastBlockStr = (await storage.get('lastBlockNumber')) ?? '0'
-    const lastBlock = parseInt(lastBlockStr)
-    console.log(`Last block: ${lastBlock}`)
-
-    const newBlock = await provider.getBlockNumber()
-    console.log(`New block: ${newBlock}`)
-    if (newBlock > lastBlock) {
-        // Update storage to persist your current state (values must be cast to string)
-        await storage.set('lastBlockNumber', newBlock.toString())
-    }
-
-    return {
-        canExec: false,
-        message: `Updated block number: ${newBlock.toString()}`,
-    }
-})
-```
-
-Test storage execution:<br/>
-`npx hardhat w3f-run storage --logs`
-
-You will see your updated key/values:
-
-```
-Simulated Web3Function Storage update:
- ✓ lastBlockNumber: '8944652'
-```
-
-## Use user secrets
-
-1. Input your secrets in `.env` file in the same directory as your web3 function.
-
-```
-COINGECKO_API=https://api.coingecko.com/api/v3
-```
-
-2. Access your secrets from the Web3Function context:
-
-```typescript
-// Get api from secrets
-const coingeckoApi = await context.secrets.get('COINGECKO_API')
-if (!coingeckoApi) return { canExec: false, message: `COINGECKO_API not set in secrets` }
-```
-
-3. Test your Web3 Function using secrets:<br/>
-   `npx hardhat w3f-run secrets --logs`
-
-## Deploy your Web3Function on IPFS
-
-Use `npx hardhat w3f-deploy W3FNAME` command to deploy your web3 function.
-
-Example:<br/>
-`npx hardhat w3f-deploy oracle`
-
-The deployer will output your Web3Function IPFS CID, that you can use to create your task:
-
-```
- ✓ Web3Function deployed to ipfs.
- ✓ CID: Qmbykp8botbdzjX9YEoc14VnC3eeaZoJ4EGzak5KzstRqH
-
-To create a task that runs your Web3 Function every minute, visit:
-> https://beta.app.gelato.network/new-task?cid=Qmbykp8botbdzjX9YEoc14VnC3eeaZoJ4EGzak5KzstRqH
-```
-
-## Create your Web3Function task
-
-Use the `automate-sdk` to easily create a new task (make sure you have your private_key in .env):
-
-```typescript
-const { taskId, tx } = await automate.createBatchExecTask({
-    name: 'Web3Function - Eth Oracle',
-    web3FunctionHash: cid,
-    web3FunctionArgs: {
-        oracle: oracle.address,
-        currency: 'ethereum',
-    },
-})
-await tx.wait()
-```
-
-If your task utilizes secrets, you can set them after the task has been created.
-
-```typescript
-// Set task specific secrets
-const secrets = oracleW3f.getSecrets()
-if (Object.keys(secrets).length > 0) {
-    await web3Function.secrets.set(secrets, taskId)
-    console.log(`Secrets set`)
-}
-```
-
-Test it with our sample task creation script:<br/>
-`yarn create-task:oracle`
-
-```
-Deploying Web3Function on IPFS...
-Web3Function IPFS CID: QmVfDbGGN6qfPs5ocu2ZuzLdBsXpu7zdfPwh14LwFUHLnc
-
-Creating automate task...
-Task created, taskId: 0x8438933eb9c6e4632d984b4db1e7672082d367b900e536f86295b2e23dbcaff3
-> https://beta.app.gelato.network/task/0x8438933eb9c6e4632d984b4db1e7672082d367b900e536f86295b2e23dbcaff3?chainId=5
-```
-
-## More examples
-
-### Coingecko oracle
-
-Fetch price data from Coingecko API to update your on-chain Oracle
-
-Source: [`web3-functions/examples/oracle/index.ts`](./web3-functions/examples/oracle/index.ts)
-
-Run:<br/>
-`npx hardhat w3f-run oracle --logs`
-
-Create task: <br/>
-`yarn create-task:oracle`
-
-### Event listener
-
-Listen to smart contract events and use storage context to maintain your execution state.
-
-Source: [`web3-functions/examples/event-listener/index.ts`](./web3-functions/examples/event-listener/index.ts)
-
-Run:<br/>
-`npx hardhat w3f-run event --logs`
-
-### Secrets
-
-Fetch data from a private API to update your on-chain Oracle
-
-Source: [`web3-functions/examples/secrets/index.ts`](./web3-functions/examples/secrets/index.ts)
-
-Run:<br/>
-`npx hardhat w3f-run secrets --logs`
-
-### Advertising Board
-
-Fetch a random quote from an API and post it on chain.
-
-Source: [`web3-functions/examples/advertising-board/index.ts`](./web3-functions/examples/advertising-board/index.ts)
-
-Run:<br/>
-`npx hardhat w3f-run adboard`
-
-Create task: <br/>
-`yarn create-task:adboard`
