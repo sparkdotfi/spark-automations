@@ -18,9 +18,7 @@ export const gasAboveAverage =
             `https://api.etherscan.io/api?module=stats&action=dailyavggasprice&startdate=${formattedDateArguments.yesterday}&enddate=${formattedDateArguments.today}&sort=asc&apikey=${apiKey}`,
         )
 
-        const averageGasPriceYesterday = BigInt(result[0].avgGasPrice_Wei)
-        const averageGasPriceToday = BigInt(result[1].avgGasPrice_Wei)
-        const averageGasPrice = (averageGasPriceYesterday + averageGasPriceToday) / BigInt(2)
+        const averageGasPrice = BigInt(result[0].avgGasPrice_Wei)
 
         return currentGasPrice > averageGasPrice
     }

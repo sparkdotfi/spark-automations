@@ -24,6 +24,10 @@ export const addresses = {
                 optimism: '0x4042127DecC0cF7cc0966791abebf7F76294DeF3',
             },
         },
+        priceSources: {
+            wbtcBtc: '0xfdFD9C85aD200c506Cf9e21F1FD8dd01932FBB23',
+            stethEth: '0x86392dC19c0b719886221c78AB11eb8Cf5c52812',
+        },
     },
     gnosis: {
         executor: '0xc4218C1127cB24a0D6c1e7D25dc34e10f2625f5A',
