@@ -21,9 +21,12 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
 
     const slackWebhookUrl = (await secrets.get('SLACK_WEBHOOK_URL')) as string
 
-    const generateSlackMessageBit = (domainAlias: string): string => `\n - ${domainAlias}`
-    const generateSlackMessage = (messageBits: Array<string>): string =>
-        `\`\`\`🦾🔮 DSR Oracle Keeper 🦾🔮\nFeed refresh to be sent to:${messageBits.join('')}\`\`\``
+    const generateSlackMessageBit = (domainAlias: string, reason: string): string => `\n - ${domainAlias} (${reason})`
+    const generateSlackMessage = (messageBits: Array<string>, currentDsr: string, currentTimestamp: string): string =>
+        `\`\`\`🦾🔮 DSR Oracle Keeper 🦾🔮\n
+Timestamp: ${currentTimestamp}
+DSR: ${currentDsr}
+Feed refresh to be sent to:${messageBits.join('')}\`\`\``
 
     const optimismStyleForwarderAddresses = addresses.mainnet.dsrForwarders.optimismStyle
     const arbitrumStyleForwarderAddresses = addresses.mainnet.dsrForwarders.arbitrumStyle
@@ -56,12 +59,23 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
             'getLastSeenPotData',
             multicallResults[0],
         )[0]
+
         multicallResults = multicallResults.slice(1)
+
         if (
-            BigInt(lastForwardedPotData.dsr) != BigInt(currentDsr) ||
+            BigInt(lastForwardedPotData.dsr) != BigInt(currentDsr)
+        ) {
+            slackMessageBits.push(generateSlackMessageBit(domain, `outdated dsr: ${lastForwardedPotData.dsr.toString()}`))
+            callsToExecute.push({
+                to: forwarderAddress,
+                data: forwarderInterface.encodeFunctionData('refresh', [gasLimit]),
+            })
+        }
+
+        if (
             BigInt(latestTimestamp) > BigInt(lastForwardedPotData.rho) + maxDelta
         ) {
-            slackMessageBits.push(generateSlackMessageBit(domain))
+            slackMessageBits.push(generateSlackMessageBit(domain, `stale rho: ${lastForwardedPotData.rho.toString()}`))
             callsToExecute.push({
                 to: forwarderAddress,
                 data: forwarderInterface.encodeFunctionData('refresh', [gasLimit]),
@@ -84,12 +98,23 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
             'getLastSeenPotData',
             multicallResults[0],
         )[0]
+
         multicallResults = multicallResults.slice(1)
+
         if (
-            BigInt(lastForwardedPotData.dsr) != BigInt(currentDsr) ||
+            BigInt(lastForwardedPotData.dsr) != BigInt(currentDsr)
+        ) {
+            slackMessageBits.push(generateSlackMessageBit(domain, `outdated dsr: ${lastForwardedPotData.dsr.toString()}`))
+            callsToExecute.push({
+                to: forwarderAddress,
+                data: arbitrumForwarderInterface.encodeFunctionData('refresh', [gasLimit, maxFeePerGas, baseFee]),
+            })
+        }
+
+        if (
             BigInt(latestTimestamp) > BigInt(lastForwardedPotData.rho) + maxDelta
         ) {
-            slackMessageBits.push(generateSlackMessageBit(domain))
+            slackMessageBits.push(generateSlackMessageBit(domain, `stale rho: ${lastForwardedPotData.rho.toString()}`))
             callsToExecute.push({
                 to: forwarderAddress,
                 data: arbitrumForwarderInterface.encodeFunctionData('refresh', [gasLimit, maxFeePerGas, baseFee]),
@@ -105,7 +130,7 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
     }
 
     if (sendSlackMessages) {
-        await sendMessageToSlack(axios, slackWebhookUrl)(generateSlackMessage(slackMessageBits))
+        await sendMessageToSlack(axios, slackWebhookUrl)(generateSlackMessage(slackMessageBits, currentDsr.toString(), latestTimestamp.toString()))
     }
     return {
         canExec: true,
