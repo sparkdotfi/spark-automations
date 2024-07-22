@@ -1,6 +1,7 @@
 export * from './addresses'
 export * from './calculateMetaMorphoMarketId'
 export * from './constants'
+export * from './formatArt'
 export * from './gasAboveAverage'
 export * from './insistOnExecution'
 export * from './sendMessageToSlack'
