@@ -3,7 +3,7 @@ import { Web3Function, Web3FunctionContext } from '@gelatonetwork/web3-functions
 import axios from 'axios'
 
 import { metaMorphoAbi, morphoAbi, multicallAbi } from '../../abis'
-import { addresses, sendMessageToSlack } from '../../utils'
+import { addresses, format18DigitPrecision, sendMessageToSlack } from '../../utils'
 
 Web3Function.onRun(async (context: Web3FunctionContext) => {
     const { multiChainProvider, userArgs, secrets } = context
@@ -46,15 +46,17 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
     const multicallResults = (await multicall.callStatic.aggregate(multicallCalls)).returnData
 
     const callsToExecute: Array<{ to: string; data: string }> = []
+    const messages: Array<string> = []
 
-    marketIds.forEach((_, index) => {
-        const { validAt } = metaMorpho.interface.decodeFunctionResult('pendingCap', multicallResults[index * 2])
+    marketIds.forEach((marketId, index) => {
+        const { validAt, value } = metaMorpho.interface.decodeFunctionResult('pendingCap', multicallResults[index * 2])
         const marketParams = morpho.interface.decodeFunctionResult('idToMarketParams', multicallResults[index * 2 + 1])
         if (validAt != 0 && validAt <= latestTimestamp) {
             callsToExecute.push({
                 to: metaMorpho.address,
                 data: metaMorpho.interface.encodeFunctionData('acceptCap', [marketParams.slice(0, 5)]),
             })
+            messages.push(`\n\n - Market ID: ${marketId}\nNew cap:   ${format18DigitPrecision(value.toString())}\nhttps://morpho.blockanalitica.com/ethereum/markets/${marketId.slice(2)}`)
         }
     })
 
@@ -70,7 +72,7 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
             axios,
             slackWebhookUrl,
         )(`\`\`\`🦾🦋 Morpho Cap Keeper 🦾🦋
-\n${callsToExecute.length} cap update${callsToExecute.length > 1 ? 's' : ''} to be executed\`\`\``)
+\n${callsToExecute.length} cap update${callsToExecute.length > 1 ? 's' : ''} to be executed${messages.join('')}\`\`\``)
     }
 
     return {
