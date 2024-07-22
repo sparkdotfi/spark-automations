@@ -4,7 +4,7 @@ import axios from 'axios'
 import { utils } from 'ethers'
 
 import { capAutomatorAbi, erc20Abi, multicallAbi, poolAbi, protocolDataProviderAbi } from '../../abis'
-import { addresses, gasAboveAverage, sendMessageToSlack } from '../../utils'
+import { addresses, formatThousandSeparators, gasAboveAverage, sendMessageToSlack } from '../../utils'
 
 Web3Function.onRun(async (context: Web3FunctionContext) => {
     const { multiChainProvider, userArgs, gelatoArgs, secrets } = context
@@ -71,6 +71,7 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
     let multicallResults = (await multicall.callStatic.aggregate(multicallCalls)).returnData
 
     const assetSymbols = {} as Record<string, string>
+    const messages: Array<string> = []
 
     for (const assetAddress of sparkAssets) {
         const reserveCaps = protocolDataProvider.interface.decodeFunctionResult('getReserveCaps', multicallResults[0])
@@ -100,21 +101,35 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
         supplyCapUpdates[assetAddress] = proposedSupplyCapChange.gt(
             (supplyGap * (BigInt(10_000) - threshold)) / BigInt(10_000),
         )
+
+        if (borrowCapUpdates[assetAddress]) {
+            const changeDirection = execResult.newBorrowCap.gt(reserveCaps.borrowCap) ? 'increase' : 'decrease'
+            const oldCap = formatThousandSeparators(reserveCaps.borrowCap.toString())
+            const newCap = formatThousandSeparators(execResult.newBorrowCap.toString())
+            messages.push(
+                `- ${assetSymbols[assetAddress]} borrow cap ${changeDirection} (${oldCap} -> ${newCap})`,
+            )
+        }
+
+        if (supplyCapUpdates[assetAddress]) {
+            const changeDirection = execResult.newSupplyCap.gt(reserveCaps.supplyCap) ? 'increase' : 'decrease'
+            const oldCap = formatThousandSeparators(reserveCaps.supplyCap.toString())
+            const newCap = formatThousandSeparators(execResult.newSupplyCap.toString())
+            messages.push(
+                `- ${assetSymbols[assetAddress]} supply cap ${changeDirection} (${oldCap} -> ${newCap})`,
+            )
+        }
     }
 
     const calls: Array<string> = []
-    const messages: Array<string> = []
 
     for (const assetAddress of sparkAssets) {
         if (borrowCapUpdates[assetAddress] && supplyCapUpdates[assetAddress]) {
             calls.push(capAutomator.interface.encodeFunctionData('exec', [assetAddress]))
-            messages.push(`- 'exec' for ${assetSymbols[assetAddress]}`)
         } else if (borrowCapUpdates[assetAddress]) {
             calls.push(capAutomator.interface.encodeFunctionData('execBorrow', [assetAddress]))
-            messages.push(`- 'execBorrow' for ${assetSymbols[assetAddress]}`)
         } else if (supplyCapUpdates[assetAddress]) {
             calls.push(capAutomator.interface.encodeFunctionData('execSupply', [assetAddress]))
-            messages.push(`- 'execSupply' for ${assetSymbols[assetAddress]}`)
         }
     }
 
