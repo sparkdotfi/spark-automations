@@ -56,7 +56,11 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
                 to: metaMorpho.address,
                 data: metaMorpho.interface.encodeFunctionData('acceptCap', [marketParams.slice(0, 5)]),
             })
-            messages.push(`\n\n - Market ID: ${marketId}\nNew cap:   ${format18DigitPrecision(value.toString())}\nhttps://morpho.blockanalitica.com/ethereum/markets/${marketId.slice(2)}`)
+            messages.push(
+                `\n\n - Market ID: ${marketId}\nNew cap:   ${format18DigitPrecision(
+                    value.toString(),
+                )}\nhttps://morpho.blockanalitica.com/ethereum/markets/${marketId.slice(2)}`,
+            )
         }
     })
 

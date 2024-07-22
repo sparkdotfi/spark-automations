@@ -106,18 +106,14 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
             const changeDirection = execResult.newBorrowCap.gt(reserveCaps.borrowCap) ? 'increase' : 'decrease'
             const oldCap = formatThousandSeparators(reserveCaps.borrowCap.toString())
             const newCap = formatThousandSeparators(execResult.newBorrowCap.toString())
-            messages.push(
-                `- ${assetSymbols[assetAddress]} borrow cap ${changeDirection} (${oldCap} -> ${newCap})`,
-            )
+            messages.push(`- ${assetSymbols[assetAddress]} borrow cap ${changeDirection} (${oldCap} -> ${newCap})`)
         }
 
         if (supplyCapUpdates[assetAddress]) {
             const changeDirection = execResult.newSupplyCap.gt(reserveCaps.supplyCap) ? 'increase' : 'decrease'
             const oldCap = formatThousandSeparators(reserveCaps.supplyCap.toString())
             const newCap = formatThousandSeparators(execResult.newSupplyCap.toString())
-            messages.push(
-                `- ${assetSymbols[assetAddress]} supply cap ${changeDirection} (${oldCap} -> ${newCap})`,
-            )
+            messages.push(`- ${assetSymbols[assetAddress]} supply cap ${changeDirection} (${oldCap} -> ${newCap})`)
         }
     }
 
