@@ -62,19 +62,17 @@ Feed refresh to be sent to:${messageBits.join('')}\`\`\``
 
         multicallResults = multicallResults.slice(1)
 
-        if (
-            BigInt(lastForwardedPotData.dsr) != BigInt(currentDsr)
-        ) {
-            slackMessageBits.push(generateSlackMessageBit(domain, `outdated dsr: ${lastForwardedPotData.dsr.toString()}`))
+        if (BigInt(lastForwardedPotData.dsr) != BigInt(currentDsr)) {
+            slackMessageBits.push(
+                generateSlackMessageBit(domain, `outdated dsr: ${lastForwardedPotData.dsr.toString()}`),
+            )
             callsToExecute.push({
                 to: forwarderAddress,
                 data: forwarderInterface.encodeFunctionData('refresh', [gasLimit]),
             })
         }
 
-        if (
-            BigInt(latestTimestamp) > BigInt(lastForwardedPotData.rho) + maxDelta
-        ) {
+        if (BigInt(latestTimestamp) > BigInt(lastForwardedPotData.rho) + maxDelta) {
             slackMessageBits.push(generateSlackMessageBit(domain, `stale rho: ${lastForwardedPotData.rho.toString()}`))
             callsToExecute.push({
                 to: forwarderAddress,
@@ -101,19 +99,17 @@ Feed refresh to be sent to:${messageBits.join('')}\`\`\``
 
         multicallResults = multicallResults.slice(1)
 
-        if (
-            BigInt(lastForwardedPotData.dsr) != BigInt(currentDsr)
-        ) {
-            slackMessageBits.push(generateSlackMessageBit(domain, `outdated dsr: ${lastForwardedPotData.dsr.toString()}`))
+        if (BigInt(lastForwardedPotData.dsr) != BigInt(currentDsr)) {
+            slackMessageBits.push(
+                generateSlackMessageBit(domain, `outdated dsr: ${lastForwardedPotData.dsr.toString()}`),
+            )
             callsToExecute.push({
                 to: forwarderAddress,
                 data: arbitrumForwarderInterface.encodeFunctionData('refresh', [gasLimit, maxFeePerGas, baseFee]),
             })
         }
 
-        if (
-            BigInt(latestTimestamp) > BigInt(lastForwardedPotData.rho) + maxDelta
-        ) {
+        if (BigInt(latestTimestamp) > BigInt(lastForwardedPotData.rho) + maxDelta) {
             slackMessageBits.push(generateSlackMessageBit(domain, `stale rho: ${lastForwardedPotData.rho.toString()}`))
             callsToExecute.push({
                 to: forwarderAddress,
@@ -130,7 +126,10 @@ Feed refresh to be sent to:${messageBits.join('')}\`\`\``
     }
 
     if (sendSlackMessages) {
-        await sendMessageToSlack(axios, slackWebhookUrl)(generateSlackMessage(slackMessageBits, currentDsr.toString(), latestTimestamp.toString()))
+        await sendMessageToSlack(
+            axios,
+            slackWebhookUrl,
+        )(generateSlackMessage(slackMessageBits, currentDsr.toString(), latestTimestamp.toString()))
     }
     return {
         canExec: true,
