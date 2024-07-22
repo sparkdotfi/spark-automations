@@ -3,7 +3,7 @@ import { Web3Function, Web3FunctionContext } from '@gelatonetwork/web3-functions
 import axios from 'axios'
 
 import { d3mHubAbi, multicallAbi, vatAbi } from '../../abis'
-import { addresses, formatArt, gasAboveAverage, ilk, sendMessageToSlack } from '../../utils'
+import { addresses, format18DigitPrecision, gasAboveAverage, ilk, sendMessageToSlack } from '../../utils'
 
 Web3Function.onRun(async (context: Web3FunctionContext) => {
     const { multiChainProvider, userArgs, gelatoArgs, secrets } = context
@@ -63,8 +63,8 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
             axios,
             slackWebhookUrl,
         )(`\`\`\`🦾🏛️ D3M Keeper 🦾🏛️\nArt ${changeDirection} to be executed
-Art before: ${formatArt(artBefore.toString())}
-Art after:  ${formatArt(artAfter.toString())}\`\`\``)
+Art before: ${format18DigitPrecision(artBefore.toString())}
+Art after:  ${format18DigitPrecision(artAfter.toString())}\`\`\``)
     }
     return {
         canExec: true,
