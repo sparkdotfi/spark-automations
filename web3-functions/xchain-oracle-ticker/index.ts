@@ -62,22 +62,20 @@ Feed refresh to be sent to:${messageBits.join('')}\`\`\``
 
         multicallResults = multicallResults.slice(1)
 
-        if (BigInt(lastForwardedPotData.dsr) != BigInt(currentDsr)) {
-            slackMessageBits.push(
-                generateSlackMessageBit(domain, `outdated dsr: ${lastForwardedPotData.dsr.toString()}`),
-            )
-            callsToExecute.push({
-                to: forwarderAddress,
-                data: forwarderInterface.encodeFunctionData('refresh', [gasLimit]),
-            })
-        }
+        const outdatedDsr = BigInt(lastForwardedPotData.dsr) != BigInt(currentDsr)
+        const staleRho = BigInt(latestTimestamp) > BigInt(lastForwardedPotData.rho) + maxDelta
 
-        if (BigInt(latestTimestamp) > BigInt(lastForwardedPotData.rho) + maxDelta) {
-            slackMessageBits.push(generateSlackMessageBit(domain, `stale rho: ${lastForwardedPotData.rho.toString()}`))
+        if (outdatedDsr || staleRho) {
             callsToExecute.push({
                 to: forwarderAddress,
                 data: forwarderInterface.encodeFunctionData('refresh', [gasLimit]),
             })
+
+            const refreshReason = outdatedDsr
+                ? `outdated dsr: ${lastForwardedPotData.dsr.toString()}`
+                : `stale rho: ${lastForwardedPotData.rho.toString()}`
+
+            slackMessageBits.push(generateSlackMessageBit(domain, refreshReason))
         }
     }
 
@@ -99,22 +97,20 @@ Feed refresh to be sent to:${messageBits.join('')}\`\`\``
 
         multicallResults = multicallResults.slice(1)
 
-        if (BigInt(lastForwardedPotData.dsr) != BigInt(currentDsr)) {
-            slackMessageBits.push(
-                generateSlackMessageBit(domain, `outdated dsr: ${lastForwardedPotData.dsr.toString()}`),
-            )
-            callsToExecute.push({
-                to: forwarderAddress,
-                data: arbitrumForwarderInterface.encodeFunctionData('refresh', [gasLimit, maxFeePerGas, baseFee]),
-            })
-        }
+        const outdatedDsr = BigInt(lastForwardedPotData.dsr) != BigInt(currentDsr)
+        const staleRho = BigInt(latestTimestamp) > BigInt(lastForwardedPotData.rho) + maxDelta
 
-        if (BigInt(latestTimestamp) > BigInt(lastForwardedPotData.rho) + maxDelta) {
-            slackMessageBits.push(generateSlackMessageBit(domain, `stale rho: ${lastForwardedPotData.rho.toString()}`))
+        if (outdatedDsr || staleRho) {
             callsToExecute.push({
                 to: forwarderAddress,
                 data: arbitrumForwarderInterface.encodeFunctionData('refresh', [gasLimit, maxFeePerGas, baseFee]),
             })
+
+            const refreshReason = outdatedDsr
+                ? `outdated dsr: ${lastForwardedPotData.dsr.toString()}`
+                : `stale rho: ${lastForwardedPotData.rho.toString()}`
+
+            slackMessageBits.push(generateSlackMessageBit(domain, refreshReason))
         }
     }
 
