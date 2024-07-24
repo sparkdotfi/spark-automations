@@ -1,9 +1,6 @@
 import fs from 'fs'
-import path from 'path'
 
-function listDirectories(srcPath: string): string[] {
-    return fs.readdirSync(srcPath).filter((file) => fs.statSync(path.join(srcPath, file)).isDirectory())
-}
+import { listDirectories } from './utils'
 
 const w3fNames = listDirectories('./web3-functions')
 
