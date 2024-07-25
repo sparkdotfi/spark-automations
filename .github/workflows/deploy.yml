@@ -30,7 +30,7 @@ jobs:
         run: yarn echo
 
       - name: Run IPFS upload
-        run: yarn lint
+        run: yarn gelato:ipfs
 
       - name: Test 2
         run: yarn echo
