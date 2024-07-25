@@ -2,6 +2,7 @@ import dotenv from 'dotenv'
 import fs from 'fs'
 import path from 'path'
 import readline from 'readline'
+import yargs from 'yargs'
 
 import { providers, utils, Wallet } from 'ethers'
 import {
@@ -13,6 +14,7 @@ import {
     Web3Function,
     Web3FunctionUserArgs,
 } from '@gelatonetwork/automate-sdk'
+import { hideBin } from 'yargs/helpers'
 
 import { listDirectories, listJsonFiles } from './utils'
 
@@ -124,8 +126,10 @@ const pause = () => {
     })
 }
 
+const addDryRunNotice = (dryRun: boolean): string => dryRun ? '[DRY RUN] ' : ''
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//// SCRIPT SETUP //////////////////////////////////////////////////////////////////////////////////////////////////////
+//// SETUP /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const keystorePath = process.env.GELATO_KEYSTORE_PATH as string
@@ -164,6 +168,22 @@ const prompter = readline.createInterface({
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ;(async () => {
+    const scriptArguments = await yargs(hideBin(process.argv))
+        .option('dryRun', {
+            alias: 'd',
+            type: 'boolean',
+            description: 'Allows to run the script in a dry run mode, without actually deploying anything',
+            default: false,
+        })
+        .option('forceRedeploy', {
+            alias: 'f',
+            type: 'boolean',
+            description: 'Forces redeployment of all tasks, even if they are already active',
+            default: false,
+        })
+        .help()
+        .alias('help', 'h').argv
+
     const w3fNames = listDirectories(w3fImplementationsPath)
     const w3fConfigs = listDirectories(w3fConfigsPath)
     const ipfsDeployments = JSON.parse(fs.readFileSync(w3fIpfsDeploymentsPath))
@@ -214,8 +234,18 @@ const prompter = readline.createInterface({
 
             if (oldTasks[deploymentName]) {
                 console.log(`Task ${deploymentName} is already active`)
+
+                if (!scriptArguments.forceRedeploy) {
+                    delete oldTasks[deploymentName]
+                    continue
+                }
+
+                console.log(`${addDryRunNotice(scriptArguments.dryRun)}Forcing ${deploymentName} redeployment`)
+                if (!scriptArguments.dryRun) {
+                    const { tx } = await automationSDKs[oldTasks[deploymentName].domain].cancelTask(oldTasks[deploymentName].taskId)
+                    await tx.wait()
+                }
                 delete oldTasks[deploymentName]
-                continue
             }
 
             const userArgs = config.args as Web3FunctionUserArgs
@@ -227,23 +257,27 @@ const prompter = readline.createInterface({
                 return secrets
             }, {} as Record<string, string>)
 
-            console.log(`Deploying ${deploymentName}`)
-            await pause()
-            const { taskId, tx }: TaskTransaction = await automationSDKs[config.domain].createBatchExecTask({
-                name: deploymentName,
-                web3FunctionHash: ipfsDeployments[w3fName],
-                web3FunctionArgs: userArgs,
-                trigger: triggerConfig,
-            })
-            await tx.wait()
-            await managementSDKs[config.domain].secrets.set(secrets, taskId)
+            console.log(`${addDryRunNotice(scriptArguments.dryRun)}Deploying ${deploymentName}`)
+            if (!scriptArguments.dryRun) {
+                await pause()
+                const { taskId, tx }: TaskTransaction = await automationSDKs[config.domain].createBatchExecTask({
+                    name: deploymentName,
+                    web3FunctionHash: ipfsDeployments[w3fName],
+                    web3FunctionArgs: userArgs,
+                    trigger: triggerConfig,
+                })
+                await tx.wait()
+                await managementSDKs[config.domain].secrets.set(secrets, taskId)
+            }
         }
     }
 
     for (const [taskName, task] of Object.entries(oldTasks)) {
-        console.log(`Cancelling task ${taskName}`)
-        const { tx } = await automationSDKs[task.domain].cancelTask(task.taskId)
-        await tx.wait()
+        console.log(`${addDryRunNotice(scriptArguments.dryRun)}Cancelling task ${taskName}`)
+        if (!scriptArguments.dryRun) {
+            const { tx } = await automationSDKs[task.domain].cancelTask(task.taskId)
+            await tx.wait()
+        }
     }
 
     prompter.close()
