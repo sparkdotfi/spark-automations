@@ -8,9 +8,14 @@ env:
   ALCHEMY_ID: ${{ secrets.ALCHEMY_ID }}
   INFURA_ID: ${{ secrets.INFURA_ID }}
   PROVIDER_URLS: ${{ vars.PROVIDER_URLS }}
+  GELATO_PRIVATE_KEY: ${{ secrets.DUMMY_PRIVATE_KEY }}
+  MAINNET_RPC_URL: ${{ secrets.MAINNET_RPC_URL }}
+  GNOSIS_CHAIN_RPC_URL: ${{ secrets.GNOSIS_CHAIN_RPC_URL }}
+  SPARK_INFO_SLACK_WEBHOOK_URL: ${{ secrets.SPARK_INFO_SLACK_WEBHOOK_URL }}
+  GELATO_KEEPERS_ETHERSCAN_API_KEY: ${{ secrets.GELATO_KEEPERS_ETHERSCAN_API_KEY }}
 
 jobs:
-  check:
+  deploy:
     strategy:
       fail-fast: true
 
