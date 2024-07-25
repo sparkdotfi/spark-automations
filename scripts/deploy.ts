@@ -125,7 +125,7 @@ const pause = () => {
     })
 }
 
-const addDryRunNotice = (dryRun: boolean): string => dryRun ? '[DRY RUN] ' : ''
+const addDryRunNotice = (dryRun: boolean): string => (dryRun ? '[DRY RUN] ' : '')
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //// SETUP /////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -247,7 +247,9 @@ const prompter = readline.createInterface({
 
                 console.log(`${addDryRunNotice(scriptArguments.dryRun)}Forcing ${deploymentName} redeployment`)
                 if (!scriptArguments.dryRun) {
-                    const { tx } = await automationSDKs[oldTasks[deploymentName].domain].cancelTask(oldTasks[deploymentName].taskId)
+                    const { tx } = await automationSDKs[oldTasks[deploymentName].domain].cancelTask(
+                        oldTasks[deploymentName].taskId,
+                    )
                     await tx.wait()
                 }
                 delete oldTasks[deploymentName]
@@ -263,7 +265,7 @@ const prompter = readline.createInterface({
             }, {} as Record<string, string>)
 
             console.log(`${addDryRunNotice(scriptArguments.dryRun)}Deploying ${deploymentName}`)
-            !scriptArguments.noConfirm && await pause()
+            !scriptArguments.noConfirm && (await pause())
 
             if (!scriptArguments.dryRun) {
                 const { taskId, tx }: TaskTransaction = await automationSDKs[config.domain].createBatchExecTask({
