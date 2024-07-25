@@ -90,11 +90,11 @@ const createTriggerConfig = (trigger: Trigger): TriggerConfig => {
                 address: trigger.filter.address,
                 topics: [topics],
             },
-            blockConfirmations: trigger.blockConfirmations,
+            blockConfirmations: Number(trigger.blockConfirmations),
         }
     }
 
-    if (trigger.type === 'time') return { type: TriggerType.TIME, interval: trigger.interval }
+    if (trigger.type === 'time') return { type: TriggerType.TIME, interval: Number(trigger.interval) }
 
     throw new Error('Unknown trigger type')
 }
