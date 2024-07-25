@@ -14,7 +14,7 @@
         "format:fix": "prettier --write \"./**/*.{js,ts,tsx,json}\" README.md",
         "format:check": "prettier --check */**/*.*{js,json,md,ts}",
         "gelato:checkKey": "npx ts-node scripts/testKeystoreAccess.ts",
-        "gelato:deploy": "npx ts-node scripts/deployAll.ts",
+        "gelato:deploy": "npx ts-node scripts/deploy.ts",
         "gelato:ipfs": "npx ts-node scripts/uploadToIpfs.ts",
         "gelato:list": "npx ts-node scripts/listActiveTasks.ts",
         "lint": "eslint --max-warnings=0 --ext ts,tsx --report-unused-disable-directives web3-functions",
