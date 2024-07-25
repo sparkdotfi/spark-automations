@@ -26,11 +26,8 @@ jobs:
       - name: Run yarn install
         run: yarn install
 
-      - name: Test 1
-        run: yarn echo
-
-      - name: Run IPFS upload
+      - name: Upload code to IPFS
         run: yarn gelato:ipfs
 
-      - name: Test 2
-        run: yarn echo
+      - name: Deploy keepers
+        run: yarn gelato:deploy -d
