@@ -30,4 +30,4 @@ jobs:
         run: yarn gelato:ipfs
 
       - name: Deploy keepers
-        run: yarn gelato:deploy -d
+        run: yarn gelato:deploy -d -n
