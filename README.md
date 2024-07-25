@@ -15,8 +15,7 @@ This repository contains all Keepers used in the Spark ecosystem to executed aut
 
 ### ✏️ Prerequisites
 
-In order to install the project and run scripts you need to have `node` and `yarn` installed on your machine.
-There are no specific versioning requirements, but version `node 20.12.2` and `yarn 1.22.19` are proved to be working.
+In order to install the project and run scripts you need to have `node` and `yarn` installed on your machine. There are no specific versioning requirements, but version `node 20.12.2` and `yarn 1.22.19` are proved to be working. 
 
 ### 🗜️ Install project dependencies
 
@@ -24,24 +23,24 @@ There are no specific versioning requirements, but version `node 20.12.2` and `y
 yarn install
 ```
 
-### 📚 Configure your local environment:
+### 📚 Configure local environment
 
 Create your own `.env` file and complete it with these settings
 
 ```bash
 ALCHEMY_ID= # API key used to create forked test environments
-PRIVATE_KEY= # API key used to create forked test environments
-GELATO_KEYSTORE_PATH= # absolute path to a keystore wallet that will manage your deployments
-GELATO_PASSWORD_PATH= # absolute path to a keystore wallet password
+PRIVATE_KEY= # Private key used for deployments
+GELATO_KEYSTORE_PATH= # Absolute path to a keystore wallet that will manage your deployments.
+GELATO_PASSWORD_PATH= # Absolute path to a keystore wallet password
 GELATO_KEEPERS_SLACK_WEBHOOK_URL= # Slack Webhook URL that will be used by the keepers to send notifications
-GELATO_KEEPERS_ETHERSCAN_API_KEY= # paid Etherscan API key that will be used by the keepers to query historical gas prices
+GELATO_KEEPERS_ETHERSCAN_API_KEY= # Paid Etherscan API key that will be used by the keepers to query historical gas prices
 ```
 
 Additionally if you don't have these variables set in your environment, add:
 
 ```bash
-MAINNET_RPC_URL= # complete Ethereum Mainnet RPC URL that will be used for keeper deployments
-GNOSIS_CHAIN_RPC_URL= # complete Gnosis Chain RPC URL that will be used for keeper deployments
+MAINNET_RPC_URL= # Complete Ethereum Mainnet RPC URL that will be used for keeper deployments
+GNOSIS_CHAIN_RPC_URL= # Complete Gnosis Chain RPC URL that will be used for keeper deployments
 ```
 
 ## ⚖️👀 Testing
@@ -55,9 +54,9 @@ yarn test
 Alternatively, in order to run only part of the tests, run on of the following:
 
 ```bash
-yarn test:mainnet # tests on mainnet fork for keepers operating on mainnet
-yarn test:gnosis # tests on gnosis chain fork for keepers operating on gnosis chain
-yarn test:utils # tests of utils, not executed on forked environment
+yarn test:mainnet # Tests on mainnet fork for keepers operating on mainnet
+yarn test:gnosis # Tests on gnosis chain fork for keepers operating on gnosis chain
+yarn test:utils # Tests of utils, not executed on forked environment
 ```
 
 ## 🚢🚀 Deployment
@@ -95,6 +94,18 @@ Any time there is a need to deploy a keeper instance with a name that already oc
 
 All keepers when deployed get a tag with a date and time of the deployment for the easy of identification. This tag, despite being added to the instance name, doesn't interfere with detecting already deployed instances.
 
+## ✏️📄 Summary of Keeper Automations
+
+| Keeper              | Trigger(s) and Config                                                                                                                                                                               | Logic                                                                                                                                                                                                                                                                                                                                                                  |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Cap Automator       | Cron job of 1 hour                                                                                                                                                                                  | Performs a local static execution of `exec` in the `capAutomator` to see if there is a resulitng change in `supplyCap` or `borrowCap` for that market. <br><br>Compiles all calls to be made to the `capAutomator` and compiles a summary of messages to send to `#spark-info` in Slack outlining which reserves were updated and for what amounts.                    |
+| D3M Ticker          | Cron job of 1 hour.                                                                                                                                                                                 | Performs a local static execution on the `d3mHub` to see if there is a resulting change in `art` for the `SparkLend` `ilk` in the `vat`.<br><br>If there is a change, performs call to `d3mHub` to update `art` and  sends a message in `#spark-info` with relevant info.                                                                                              |
+| Governance Executor | Runs of cron job of 1 hour. <br><br>Currently deployed on Gnosis.                                                                                                                                   | Calls `getActionsSetCount` on the executor, iterates through all actions, determines if there are any pending actions that are past the timelock and returns governance actions that are able to be executed.<br><br>Executes governance actions and sends a messages to `#spark-info` with the spell address that was executed, as well as the domain.                |
+| Kill Switch         | Cron job of 5 minutes.<br><br>Also runs on event `AnswerUpdated` in oracle aggregators. <br><br>Currently deployed for STETH/ETH and WBTC/BTC aggregators.                                          | Calls `latestAnswer` on the given oracle and gets the `oracleThreshold` in the `killSwitchOracle`.<br><br>If the killswitch hasn't been triggered and the answer is below the threshold, it calls `trigger` on the `killSwitchOracle`.<br><br>Sends Slack messages to `#spark-info` with info about which markets were triggered, along with the answer and threshold. |
+| Meta Morpho         | Cron job of 1 hour.                                                                                                                                                                                 | Calls `pendingCap` for all market IDs and determines if there is a `pendingCap` that is past the timelock and can be accepted.<br><br>Calls `acceptCap` for all applicable market and sends Slack messages to `#spark-info` with info about the markets that changed and the resulting cap.                                                                            |
+| XChain DSR Oracle   | Cron job of 5 minutes.<br><br>Also runs on event `LogNote` in the `PauseProxy`.<br><br>Currently calling forwarders on Arbitrum, Base, and Optimism.<br><br>`rho` is considered stale after 1 week. | Calls all `forwarder` addresses on mainnet with `getLastSeenPotData`. Checks to see if `dsr` has changed, or if `rho` is stale.<br><br>If either of these conditions are true, it calls `refresh` on the respective `forwarder` and sends Slack messages to `#spark-info` outlining which forwarder was refreshed and for what reason.                                 |
+
+
 ## 🪚🖍️ Misc
 
 ### 🔑 Key Check
@@ -105,7 +116,7 @@ In order to make sure that your keystore paths are configured correctly run:
 yarn gelato:checkKey
 ```
 
-This script will try to access the key that variables `GELATO_KEYSTORE_PATH` and `GELATO_PASSWORD_PATH` point to and will print the address that was decrypted
+This script will try to access the key that variables `GELATO_KEYSTORE_PATH` and `GELATO_PASSWORD_PATH` point to and will print the address that was decrypted.
 
 ### 📜 Active Keepers List
 
