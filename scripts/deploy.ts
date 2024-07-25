@@ -7,6 +7,7 @@ import { providers, utils, Wallet } from 'ethers'
 import {
     AutomateSDK,
     Secrets,
+    TaskTransaction,
     TriggerConfig,
     TriggerType,
     Web3Function,
