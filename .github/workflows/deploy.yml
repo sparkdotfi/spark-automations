@@ -3,7 +3,7 @@ name: CD
 on:
     push:
         branches:
-            - sc-505-refactor-deployment-scripts
+            - master
 env:
   ALCHEMY_ID: ${{ secrets.ALCHEMY_ID }}
   INFURA_ID: ${{ secrets.INFURA_ID }}
