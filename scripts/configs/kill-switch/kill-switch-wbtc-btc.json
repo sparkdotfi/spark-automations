@@ -1,0 +1,22 @@
+{
+    "domain": "mainnet",
+    "args": {
+        "sendSlackMessages": true
+    },
+    "secrets": {
+        "SLACK_WEBHOOK_URL": "SPARK_INFO_SLACK_WEBHOOK_URL"
+    },
+    "trigger": {
+        "type": "event",
+        "filter": {
+            "address": "0xD7623f1d24b35c392862fB67C9716564A117C9DE",
+            "topics": [
+                {
+                    "abiName": "oracleAggregator",
+                    "eventName": "AnswerUpdated"
+                }
+            ]
+        },
+        "blockConfirmations": 0
+    }
+}

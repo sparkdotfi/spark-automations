@@ -1,0 +1,16 @@
+{
+    "domain": "mainnet",
+    "args": {
+        "threshold": 5000,
+        "performGasCheck": true,
+        "sendSlackMessages": true
+    },
+    "secrets": {
+        "SLACK_WEBHOOK_URL": "SPARK_INFO_SLACK_WEBHOOK_URL",
+        "ETHERSCAN_API_KEY": "GELATO_KEEPERS_ETHERSCAN_API_KEY"
+    },
+    "trigger": {
+        "type": "time",
+        "interval": "3600000"
+    }
+}
