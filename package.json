@@ -25,7 +25,8 @@
         "test:utils": "npx hardhat test test/utils/*",
         "test": "yarn test:utils && yarn test:gnosis && yarn test:mainnet",
         "verify": "npx hardhat etherscan-verify",
-        "w3f:test": "npx w3f test web3-functions/simple/index.ts --logs --chain-id=88153591557"
+        "w3f:test": "npx w3f test web3-functions/simple/index.ts --logs --chain-id=88153591557",
+        "echo": "cat scripts/pre-deployments.json"
     },
     "license": "ISC",
     "devDependencies": {

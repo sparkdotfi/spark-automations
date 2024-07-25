@@ -1,0 +1,36 @@
+name: CD
+
+on:
+    push:
+        branches:
+            - sc-506-ci-on-the-master-branch
+env:
+  ALCHEMY_ID: ${{ secrets.ALCHEMY_ID }}
+  INFURA_ID: ${{ secrets.INFURA_ID }}
+  PROVIDER_URLS: ${{ vars.PROVIDER_URLS }}
+
+jobs:
+  check:
+    strategy:
+      fail-fast: true
+
+    environment: CI
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install yarn
+        run: npm install -g yarn
+
+      - name: Run yarn install
+        run: yarn install
+
+      - name: Test 1
+        run: yarn echo
+
+      - name: Run IPFS upload
+        run: yarn lint
+
+      - name: Test 2
+        run: yarn echo
