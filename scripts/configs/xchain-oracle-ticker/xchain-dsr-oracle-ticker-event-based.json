@@ -12,7 +12,7 @@
         "type": "event",
         "filter": {
             "address": "0xBE8E3e3618f7474F8cB1d074A26afFef007E98FB",
-            "topics": [
+            "topicsInfo": [
                 {
                     "abiName": "dsNote",
                     "eventName": "LogNote"

@@ -47,7 +47,7 @@ type EventTrigger = {
     type: 'event'
     filter: {
         address: string
-        topics: Array<{
+        topicsInfo: Array<{
             abiName: string
             eventName: string
         }>
@@ -81,7 +81,7 @@ const createTriggerConfig = (trigger: Trigger): TriggerConfig => {
     if (trigger.type === 'event') {
         let topics: Array<string> = []
 
-        for (const topic of trigger.filter.topics) {
+        for (const topic of trigger.filter.topicsInfo) {
             const abi = JSON.parse(fs.readFileSync(path.join(abisPath, topic.abiName + '.json')))
             const contractInterface = new utils.Interface(abi)
             topics.push(contractInterface.getEventTopic(topic.eventName))
@@ -114,8 +114,7 @@ const getBufferFromString = (str: string): Buffer => {
 
 const createHash = (rawConfig: Buffer, ipfsDeployment: string): string => {
     const configHash = utils.keccak256(rawConfig)
-    const ipfsDeploymentHash = utils.keccak256(getBufferFromString(ipfsDeployment))
-    return utils.keccak256(getBufferFromString(configHash.concat(ipfsDeploymentHash)))
+    return utils.keccak256(getBufferFromString(configHash.concat(ipfsDeployment)))
 }
 
 const pause = () => {
@@ -181,6 +180,12 @@ const prompter = readline.createInterface({
             description: 'Forces redeployment of all tasks, even if they are already active',
             default: false,
         })
+        .option('noConfirm', {
+            alias: 'n',
+            type: 'boolean',
+            description: 'Skips all the prompts and proceeds with the deployment without confirmations',
+            default: false,
+        })
         .help()
         .alias('help', 'h').argv
 
@@ -230,7 +235,7 @@ const prompter = readline.createInterface({
 
             const configName = configFileName.slice(0, -5) // remove '.json'
             const hash = createHash(rawConfig, ipfsDeployments[w3fName])
-            const deploymentName = `${configName} ${hash}`
+            const deploymentName = `${configName}-${hash}`
 
             if (oldTasks[deploymentName]) {
                 console.log(`Task ${deploymentName} is already active`)
@@ -258,8 +263,9 @@ const prompter = readline.createInterface({
             }, {} as Record<string, string>)
 
             console.log(`${addDryRunNotice(scriptArguments.dryRun)}Deploying ${deploymentName}`)
+            !scriptArguments.noConfirm && await pause()
+
             if (!scriptArguments.dryRun) {
-                await pause()
                 const { taskId, tx }: TaskTransaction = await automationSDKs[config.domain].createBatchExecTask({
                     name: deploymentName,
                     web3FunctionHash: ipfsDeployments[w3fName],

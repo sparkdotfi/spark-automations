@@ -10,7 +10,7 @@
         "type": "event",
         "filter": {
             "address": "0xD7623f1d24b35c392862fB67C9716564A117C9DE",
-            "topics": [
+            "topicsInfo": [
                 {
                     "abiName": "oracleAggregator",
                     "eventName": "AnswerUpdated"
