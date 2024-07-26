@@ -95,9 +95,9 @@ This script will check the contents of the `pre-deployments.json` file and deter
 
 The exact number of instances, their names, arguments, and configuration are defined in config files. The arguments used to spin-up the keeper are passed along with the deployment transaction and can only be changed by redeploying the keeper instance. Secrets are set in separate transactions, after the initial deployment and their value can be changed at any time via UI or a script.
 
-Any time, the script is run, all previously running keepers are retired, unless an exactly the same keeper, with exactly the same configuration would be deployed.
+Any time the script is run, all previously running keepers are retired, except keepers that have the same code logic (IPFS hash) and configuration.
 
-In order to force the redeployment of the keeper, use `-f` of `--forceRedeploy`flag.
+In order to force the redeployment of the keeper, use `-f` of `--forceRedeploy` flag.
 In order to perform a script dry run, without actually performing any actions, use `-d` or `--dryRun` flag.
 The script will ask for a confirmation before every deployment. If a fully automated run is needed, run it with `-n` or `--noConfirm` flag.
 
