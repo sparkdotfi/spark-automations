@@ -29,7 +29,6 @@ Create your own `.env` file and complete it with these settings
 
 ```bash
 ALCHEMY_ID= # API key used to create forked test environments
-PRIVATE_KEY= # Private key used for deployments
 GELATO_KEYSTORE_PATH= # Absolute path to a keystore wallet that will manage your deployments.
 GELATO_PASSWORD_PATH= # Absolute path to a keystore wallet password
 GELATO_KEEPERS_SLACK_WEBHOOK_URL= # Slack Webhook URL that will be used by the keepers to send notifications
@@ -43,7 +42,7 @@ MAINNET_RPC_URL= # Complete Ethereum Mainnet RPC URL that will be used for keepe
 GNOSIS_CHAIN_RPC_URL= # Complete Gnosis Chain RPC URL that will be used for keeper deployments
 ```
 
-Alternatively, if there is no keystore on the machine, the scripts are running on, you can use plain private key:
+Alternatively, if there is no keystore on the machine the scripts are running on, you can use plain private key:
 
 ```bash
 GELATO_PRIVATE_KEY= # A private key (it's usage is going to prioritized over accessing the keystore)
@@ -76,7 +75,7 @@ Deployment of a keeper consists of 2 subsequent steps.
 
 ### 🌐 IPFS Deployment
 
-The code of each of the keeper types needs to be deployed to IPFS by running the following command:
+The code of each of the keeper type needs to be deployed to IPFS by running the following command:
 
 ```bash
 yarn gelato:ipfs
@@ -92,7 +91,7 @@ In order to spin-up operating instances of keepers running the code previously d
 yarn gelato:deploy
 ```
 
-This script will check the contents of the `pre-deployments.json` file and determine for which keeper types to run the actual deployment script. The deployment will not be triggered if there is no IPFS deployment address for a given keeper, or a given IPFS deployment, combined with a configuration is already deployed. Otherwise, the deployment will be performed.
+This script will check the contents of the `pre-deployments.json` file and determine for which keeper types to run the actual deployment script. The deployment will not be triggered if there is no IPFS deployment address for a given keeper, or a given IPFS deployment combined with a configuration is already deployed. Otherwise, the deployment will be performed.
 
 The exact number of instances, their names, arguments, and configuration are defined in config files. The arguments used to spin-up the keeper are passed along with the deployment transaction and can only be changed by redeploying the keeper instance. Secrets are set in separate transactions, after the initial deployment and their value can be changed at any time via UI or a script.
 
