@@ -26,7 +26,6 @@ dotenv.config()
 
 const w3fImplementationsPath = './web3-functions'
 const w3fConfigsPath = './scripts/configs'
-const w3fIpfsDeploymentsPath = './scripts/pre-deployments.json'
 const abisPath = './abis'
 
 const domains = ['mainnet', 'gnosis']
@@ -191,19 +190,32 @@ const prompter = readline.createInterface({
 
     const w3fNames = listDirectories(w3fImplementationsPath)
     const w3fConfigs = listDirectories(w3fConfigsPath)
-    const ipfsDeployments = JSON.parse(fs.readFileSync(w3fIpfsDeploymentsPath))
 
-    let oldTasks: Record<string, { taskId: string; domain: string }> = {}
+    let ipfsDeployments: Record<string, string> = {}
+
+    for (const w3fName of w3fNames) {
+        console.log(`Uploading ${w3fName} to IPFS...`)
+
+        const deploymentOutput = require('child_process').execSync(`npx hardhat w3f-deploy ${w3fName}`)
+        const cid = deploymentOutput.toString().split(' ')[8].slice(0, -4)
+        console.log(`New ${w3fName} CID: ${cid}`)
+
+        ipfsDeployments[w3fName] = cid
+    }
+
+    // Fetching all active tasks to retire if we won't need to keep them
+    let tasksToRetire: Record<string, { taskId: string; domain: string }> = {}
     for (const domain of domains) {
         const tasks = await automationSDKs[domain].getActiveTasks()
         if (tasks.length === 0) continue
         for (const task of tasks) {
-            oldTasks[task.name] = { taskId: task.taskId, domain }
+            tasksToRetire[task.name] = { taskId: task.taskId, domain }
         }
     }
 
     for (const w3fName of w3fNames) {
         if (!w3fConfigs.includes(w3fName)) {
+            // No matching directory in configs for the implementation
             console.log(`No configs for ${w3fName}`)
             continue
         }
@@ -214,6 +226,7 @@ const prompter = readline.createInterface({
 
         const configFileNames = listJsonFiles(path.join(w3fConfigsPath, w3fName))
         if (configFileNames.length == 0) {
+            // Configs directory is empty
             console.log(`No configs for ${w3fName}`)
             continue
         }
@@ -237,22 +250,12 @@ const prompter = readline.createInterface({
             const hash = createHash(rawConfig, ipfsDeployments[w3fName])
             const deploymentName = `${configName}-${hash}`
 
-            if (oldTasks[deploymentName]) {
+            if (tasksToRetire[deploymentName] && !scriptArguments.forceRedeploy) {
                 console.log(`Task ${deploymentName} is already active`)
-
-                if (!scriptArguments.forceRedeploy) {
-                    delete oldTasks[deploymentName]
-                    continue
-                }
-
-                console.log(`${addDryRunNotice(scriptArguments.dryRun)}Forcing ${deploymentName} redeployment`)
-                if (!scriptArguments.dryRun) {
-                    const { tx } = await automationSDKs[oldTasks[deploymentName].domain].cancelTask(
-                        oldTasks[deploymentName].taskId,
-                    )
-                    await tx.wait()
-                }
-                delete oldTasks[deploymentName]
+                // If the redeploy is not forced, the task is removed from the list of tasks to retire, as it needs to be kept
+                delete tasksToRetire[deploymentName]
+                // The new deployment is skipped
+                continue
             }
 
             const userArgs = config.args as Web3FunctionUserArgs
@@ -280,7 +283,8 @@ const prompter = readline.createInterface({
         }
     }
 
-    for (const [taskName, task] of Object.entries(oldTasks)) {
+    // Retiring old tasks, based on the list of their IDs fetched before any new deployments were made
+    for (const [taskName, task] of Object.entries(tasksToRetire)) {
         console.log(`${addDryRunNotice(scriptArguments.dryRun)}Cancelling task ${taskName}`)
         if (!scriptArguments.dryRun) {
             const { tx } = await automationSDKs[task.domain].cancelTask(task.taskId)

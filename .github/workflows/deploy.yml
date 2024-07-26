@@ -31,8 +31,5 @@ jobs:
       - name: Run yarn install
         run: yarn install
 
-      - name: Upload code to IPFS
-        run: yarn gelato:ipfs
-
       - name: Deploy keepers
         run: yarn gelato:deploy -n

@@ -8,8 +8,7 @@ This repository contains all Keepers used in the Spark ecosystem to executed aut
 2. Run `yarn install` to install dependencies
 3. Run `yarn test` to run tests
 4. Set all necessary environment variables
-5. Run `yarn gelato:ipfs` to upload all keepers' code to IPFS
-6. Run `yarn gelato:deploy` to deploy all of the keepers
+5. Run `yarn gelato:deploy` to deploy all of the keepers
 
 ## ⚙️🧰 Project Setup
 
@@ -73,25 +72,15 @@ Deployment of a keeper consists of 2 subsequent steps.
 1. The code of the keeper has to be uploaded to IPFS
 2. An on-chain instance of a keeper running a code deployed at a specific IPFS address with proper arguments needs to be created and secrets needed to operate the keeper need to be set.
 
-### 🌐 IPFS Deployment
-
-The code of each of the keeper type needs to be deployed to IPFS by running the following command:
-
-```bash
-yarn gelato:ipfs
-```
-
-As a result, the newly created IPFS deployment addresses will be stored in the `pre-deployments.json` file.
-
 ### ⛓️ On-Chain Deployment
 
-In order to spin-up operating instances of keepers running the code previously deployed to IPFS, run the following command (make sure to have all of the environment variables properly set):
+In order to spin-up operating instances of keepers, run the following command (make sure to have all of the environment variables properly set):
 
 ```bash
 yarn gelato:deploy
 ```
 
-This script will check the contents of the `pre-deployments.json` file and determine for which keeper types to run the actual deployment script. The deployment will not be triggered if there is no IPFS deployment address for a given keeper, or a given IPFS deployment combined with a configuration is already deployed. Otherwise, the deployment will be performed.
+First the script will upload all code to IPFS and determine for which keeper types to run the actual deployment script. The deployment will not be triggered if a given IPFS deployment combined with a configuration is already deployed. Otherwise, the deployment will be performed.
 
 The exact number of instances, their names, arguments, and configuration are defined in config files. The arguments used to spin-up the keeper are passed along with the deployment transaction and can only be changed by redeploying the keeper instance. Secrets are set in separate transactions, after the initial deployment and their value can be changed at any time via UI or a script.
 
@@ -108,12 +97,11 @@ You can check description of all of the options by running the script with `-h` 
 | Keeper              | Trigger(s) and Config                                                                                                                                                                               | Logic                                                                                                                                                                                                                                                                                                                                                                  |
 | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Cap Automator       | Cron job of 1 hour                                                                                                                                                                                  | Performs a local static execution of `exec` in the `capAutomator` to see if there is a resulitng change in `supplyCap` or `borrowCap` for that market. <br><br>Compiles all calls to be made to the `capAutomator` and compiles a summary of messages to send to `#spark-info` in Slack outlining which reserves were updated and for what amounts.                    |
-| D3M Ticker          | Cron job of 1 hour.                                                                                                                                                                                 | Performs a local static execution on the `d3mHub` to see if there is a resulting change in `art` for the `SparkLend` `ilk` in the `vat`.<br><br>If there is a change, performs call to `d3mHub` to update `art` and  sends a message in `#spark-info` with relevant info.                                                                                              |
+| D3M Ticker          | Cron job of 1 hour.                                                                                                                                                                                 | Performs a local static execution on the `d3mHub` to see if there is a resulting change in `art` for the `SparkLend` `ilk` in the `vat`.<br><br>If there is a change, performs call to `d3mHub` to update `art` and sends a message in `#spark-info` with relevant info.                                                                                               |
 | Governance Executor | Runs of cron job of 1 hour. <br><br>Currently deployed on Gnosis.                                                                                                                                   | Calls `getActionsSetCount` on the executor, iterates through all actions, determines if there are any pending actions that are past the timelock and returns governance actions that are able to be executed.<br><br>Executes governance actions and sends a messages to `#spark-info` with the spell address that was executed, as well as the domain.                |
 | Kill Switch         | Cron job of 5 minutes.<br><br>Also runs on event `AnswerUpdated` in oracle aggregators. <br><br>Currently deployed for STETH/ETH and WBTC/BTC aggregators.                                          | Calls `latestAnswer` on the given oracle and gets the `oracleThreshold` in the `killSwitchOracle`.<br><br>If the killswitch hasn't been triggered and the answer is below the threshold, it calls `trigger` on the `killSwitchOracle`.<br><br>Sends Slack messages to `#spark-info` with info about which markets were triggered, along with the answer and threshold. |
 | Meta Morpho         | Cron job of 1 hour.                                                                                                                                                                                 | Calls `pendingCap` for all market IDs and determines if there is a `pendingCap` that is past the timelock and can be accepted.<br><br>Calls `acceptCap` for all applicable market and sends Slack messages to `#spark-info` with info about the markets that changed and the resulting cap.                                                                            |
 | XChain DSR Oracle   | Cron job of 5 minutes.<br><br>Also runs on event `LogNote` in the `PauseProxy`.<br><br>Currently calling forwarders on Arbitrum, Base, and Optimism.<br><br>`rho` is considered stale after 1 week. | Calls all `forwarder` addresses on mainnet with `getLastSeenPotData`. Checks to see if `dsr` has changed, or if `rho` is stale.<br><br>If either of these conditions are true, it calls `refresh` on the respective `forwarder` and sends Slack messages to `#spark-info` outlining which forwarder was refreshed and for what reason.                                 |
-
 
 ## 🪚🖍️ Misc
 
