@@ -8,14 +8,14 @@ This repository contains all Keepers used in the Spark ecosystem to executed aut
 2. Run `yarn install` to install dependencies
 3. Run `yarn test` to run tests
 4. Set all necessary environment variables
-5. Run `yarn gelato:ipfs <NAME_OF_THE_KEEPER_CODE_FOLDER>` for every keeper type
+5. Run `yarn gelato:ipfs` to upload all keepers' code to IPFS
 6. Run `yarn gelato:deploy` to deploy all of the keepers
 
 ## ⚙️🧰 Project Setup
 
 ### ✏️ Prerequisites
 
-In order to install the project and run scripts you need to have `node` and `yarn` installed on your machine. There are no specific versioning requirements, but version `node 20.12.2` and `yarn 1.22.19` are proved to be working. 
+In order to install the project and run scripts you need to have `node` and `yarn` installed on your machine. There are no specific versioning requirements, but version `node 20.12.2` and `yarn 1.22.19` are proved to be working.
 
 ### 🗜️ Install project dependencies
 
@@ -43,6 +43,14 @@ MAINNET_RPC_URL= # Complete Ethereum Mainnet RPC URL that will be used for keepe
 GNOSIS_CHAIN_RPC_URL= # Complete Gnosis Chain RPC URL that will be used for keeper deployments
 ```
 
+Alternatively, if there is no keystore on the machine, the scripts are running on, you can use plain private key:
+
+```bash
+GELATO_PRIVATE_KEY= # A private key (it's usage is going to prioritized over accessing the keystore)
+```
+
+Additionally make sure to define all of the env variables used in keeper secrets the `scripts/configs` files.
+
 ## ⚖️👀 Testing
 
 In order to run all the tests, run:
@@ -68,15 +76,13 @@ Deployment of a keeper consists of 2 subsequent steps.
 
 ### 🌐 IPFS Deployment
 
-The code of each of the keeper types needs to be separately deployed by running the following command:
+The code of each of the keeper types needs to be deployed to IPFS by running the following command:
 
 ```bash
-yarn gelato:ipfs <NAME_OF_THE_KEEPER_CODE_FOLDER> # i.e. yarn gelato:ipfs governance-executor
+yarn gelato:ipfs
 ```
 
-As a result, the newly created IPFS deployment address will be stored in the `pre-deployments.json` file.
-
-This command should be re-run for each of the keeper types, whenever there is a meaningful code change, that will require keeper redeployment.
+As a result, the newly created IPFS deployment addresses will be stored in the `pre-deployments.json` file.
 
 ### ⛓️ On-Chain Deployment
 
@@ -86,13 +92,17 @@ In order to spin-up operating instances of keepers running the code previously d
 yarn gelato:deploy
 ```
 
-This script will check the contents of the `pre-deployments.json` file and the `deployments.json` file and determine for which keeper types to run the actual deployment script. The deployment will not be triggered if there is no IPFS deployment address for a given keeper, or the the IPFS deployment address in the `pre-deployments.json` file matches the one in the `deployments.json` file, which means, that this version of the keeper code was already deployed. Otherwise, the deployment will be performed.
+This script will check the contents of the `pre-deployments.json` file and determine for which keeper types to run the actual deployment script. The deployment will not be triggered if there is no IPFS deployment address for a given keeper, or a given IPFS deployment, combined with a configuration is already deployed. Otherwise, the deployment will be performed.
 
-The exact number of instances, their names, arguments, and configuration are defined in the script. The arguments used to spin-up the keeper are passed along with the deployment transaction and can only be changed by redeploying the keeper instance. Secrets are set in separate transactions, after the initial deployment and their value can be changed at any time via UI or a script.
+The exact number of instances, their names, arguments, and configuration are defined in config files. The arguments used to spin-up the keeper are passed along with the deployment transaction and can only be changed by redeploying the keeper instance. Secrets are set in separate transactions, after the initial deployment and their value can be changed at any time via UI or a script.
 
-Any time there is a need to deploy a keeper instance with a name that already occurs among the list of deployed and active keeper instances, the previously running one will be cancelled first.
+Any time, the script is run, all previously running keepers are retired, unless an exactly the same keeper, with exactly the same configuration would be deployed.
 
-All keepers when deployed get a tag with a date and time of the deployment for the easy of identification. This tag, despite being added to the instance name, doesn't interfere with detecting already deployed instances.
+In order to force the redeployment of the keeper, use `-f` of `--forceRedeploy`flag.
+In order to perform a script dry run, without actually performing any actions, use `-d` or `--dryRun` flag.
+The script will ask for a confirmation before every deployment. If a fully automated run is needed, run it with `-n` or `--noConfirm` flag.
+
+You can check description of all of the options by running the script with `-h` or `--help` flag.
 
 ## ✏️📄 Summary of Keeper Automations
 
