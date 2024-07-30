@@ -1,0 +1,24 @@
+{
+    "domain": "mainnet",
+    "args": {
+        "maxDelta": "604800",
+        "gasLimit": "800000",
+        "sendSlackMessages": true
+    },
+    "secrets": {
+        "SLACK_WEBHOOK_URL": "SPARK_INFO_SLACK_WEBHOOK_URL"
+    },
+    "trigger": {
+        "type": "event",
+        "filter": {
+            "address": "0xBE8E3e3618f7474F8cB1d074A26afFef007E98FB",
+            "topicsInfo": [
+                {
+                    "abiName": "dsNote",
+                    "eventName": "LogNote"
+                }
+            ]
+        },
+        "blockConfirmations": 0
+    }
+}

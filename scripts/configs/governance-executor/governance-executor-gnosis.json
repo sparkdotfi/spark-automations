@@ -1,0 +1,14 @@
+{
+    "domain": "gnosis",
+    "args": {
+        "domain": "gnosis",
+        "sendSlackMessages": true
+    },
+    "secrets": {
+        "SLACK_WEBHOOK_URL": "SPARK_INFO_SLACK_WEBHOOK_URL"
+    },
+    "trigger": {
+        "type": "time",
+        "interval": "3600000"
+    }
+}

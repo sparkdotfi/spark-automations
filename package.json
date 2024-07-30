@@ -13,9 +13,8 @@
         "format": "prettier --check \"./**/*.{js,ts,tsx,json}\" README.md",
         "format:fix": "prettier --write \"./**/*.{js,ts,tsx,json}\" README.md",
         "format:check": "prettier --check */**/*.*{js,json,md,ts}",
-        "gelato:checkKey": "npx ts-node scripts/checkDeployerKey.ts",
-        "gelato:deploy": "npx ts-node scripts/deployAll.ts",
-        "gelato:ipfs": "npx ts-node scripts/uploadToIpfs.ts",
+        "gelato:checkKey": "npx ts-node scripts/testKeystoreAccess.ts",
+        "gelato:deploy": "npx ts-node scripts/deploy.ts",
         "gelato:list": "npx ts-node scripts/listActiveTasks.ts",
         "lint": "eslint --max-warnings=0 --ext ts,tsx --report-unused-disable-directives web3-functions",
         "lint:fix": "yarn lint --fix",
@@ -43,6 +42,7 @@
         "@types/chai": "4.3.4",
         "@types/mocha": "10.0.1",
         "@types/node": "18.14.0",
+        "@types/yargs": "^17.0.32",
         "@typescript-eslint/eslint-plugin": "^5.61.0",
         "@typescript-eslint/parser": "^5.61.0",
         "axios-mock-adapter": "^1.22.0",
@@ -78,6 +78,7 @@
         "@gelatonetwork/automate-sdk": "^3.0.2",
         "@gelatonetwork/web3-functions-sdk": "^2.3.0",
         "axios": "^1.6.8",
-        "ky": "^0.33.2"
+        "ky": "^0.33.2",
+        "yargs": "^17.7.2"
     }
 }
