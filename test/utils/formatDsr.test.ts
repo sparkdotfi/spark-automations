@@ -1,5 +1,6 @@
-import { formatDsr } from '../../utils'
 import { expect } from 'chai'
+
+import { formatDsr } from '../../utils'
 
 describe('formatDsr', () => {
     let dsr: string
