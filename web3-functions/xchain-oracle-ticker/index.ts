@@ -4,7 +4,7 @@ import axios from 'axios'
 import { providers, utils } from 'ethers'
 
 import { forwarderAbi, forwarderArbitrumAbi, multicallAbi, potAbi } from '../../abis'
-import { addresses, formatTimestamp, sendMessageToSlack } from '../../utils'
+import { addresses, formatDsr, formatTimestamp, sendMessageToSlack } from '../../utils'
 
 const arbitrumDomainUrls: Record<string, string | undefined> = {
     [`${addresses.mainnet.dsrForwarders.arbitrumStyle.arbitrum}`]: 'https://arb1.arbitrum.io/rpc',
@@ -25,7 +25,7 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
     const generateSlackMessage = (messageBits: Array<string>, currentDsr: string, currentTimestamp: number): string =>
         `\`\`\`🦾🔮 DSR Oracle Keeper 🦾🔮\n
 Timestamp: ${formatTimestamp(currentTimestamp)}
-DSR: ${currentDsr}
+DSR: ${formatDsr(currentDsr)}
 Feed refresh to be sent to:${messageBits.join('')}\`\`\``
 
     const optimismStyleForwarderAddresses = addresses.mainnet.dsrForwarders.optimismStyle
@@ -72,7 +72,7 @@ Feed refresh to be sent to:${messageBits.join('')}\`\`\``
             })
 
             const refreshReason = outdatedDsr
-                ? `outdated dsr: ${lastForwardedPotData.dsr.toString()}`
+                ? `outdated dsr: ${formatDsr(lastForwardedPotData.dsr.toString())}`
                 : `stale rho: ${formatTimestamp(Number(lastForwardedPotData.rho))}`
 
             slackMessageBits.push(generateSlackMessageBit(domain, refreshReason))
@@ -107,7 +107,7 @@ Feed refresh to be sent to:${messageBits.join('')}\`\`\``
             })
 
             const refreshReason = outdatedDsr
-                ? `outdated dsr: ${lastForwardedPotData.dsr.toString()}`
+                ? `outdated dsr: ${formatDsr(lastForwardedPotData.dsr.toString())}`
                 : `stale rho: ${formatTimestamp(Number(lastForwardedPotData.rho))}`
 
             slackMessageBits.push(generateSlackMessageBit(domain, refreshReason))
