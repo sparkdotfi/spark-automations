@@ -22,7 +22,12 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
     const slackWebhookUrl = (await secrets.get('SLACK_WEBHOOK_URL')) as string
 
     const generateSlackMessageBit = (domainAlias: string, reason: string): string => `\n - ${domainAlias} (${reason})`
-    const generateSlackMessage = (messageBits: Array<string>, currentDsr: string, currentChi: string, currentTimestamp: number): string =>
+    const generateSlackMessage = (
+        messageBits: Array<string>,
+        currentDsr: string,
+        currentChi: string,
+        currentTimestamp: number,
+    ): string =>
         `\`\`\`🦾🔮 DSR Oracle Keeper 🦾🔮\n
 Timestamp: ${formatTimestamp(currentTimestamp)}
 DSR: ${formatDsr(currentDsr)}
