@@ -4,7 +4,7 @@ import axios from 'axios'
 import { providers, utils } from 'ethers'
 
 import { forwarderAbi, forwarderArbitrumAbi, multicallAbi, potAbi } from '../../abis'
-import { addresses, sendMessageToSlack } from '../../utils'
+import { addresses, formatTimestamp, sendMessageToSlack } from '../../utils'
 
 const arbitrumDomainUrls: Record<string, string | undefined> = {
     [`${addresses.mainnet.dsrForwarders.arbitrumStyle.arbitrum}`]: 'https://arb1.arbitrum.io/rpc',
@@ -22,9 +22,9 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
     const slackWebhookUrl = (await secrets.get('SLACK_WEBHOOK_URL')) as string
 
     const generateSlackMessageBit = (domainAlias: string, reason: string): string => `\n - ${domainAlias} (${reason})`
-    const generateSlackMessage = (messageBits: Array<string>, currentDsr: string, currentTimestamp: string): string =>
+    const generateSlackMessage = (messageBits: Array<string>, currentDsr: string, currentTimestamp: number): string =>
         `\`\`\`🦾🔮 DSR Oracle Keeper 🦾🔮\n
-Timestamp: ${currentTimestamp}
+Timestamp: ${formatTimestamp(currentTimestamp)}
 DSR: ${currentDsr}
 Feed refresh to be sent to:${messageBits.join('')}\`\`\``
 
@@ -73,7 +73,7 @@ Feed refresh to be sent to:${messageBits.join('')}\`\`\``
 
             const refreshReason = outdatedDsr
                 ? `outdated dsr: ${lastForwardedPotData.dsr.toString()}`
-                : `stale rho: ${lastForwardedPotData.rho.toString()}`
+                : `stale rho: ${formatTimestamp(Number(lastForwardedPotData.rho))}`
 
             slackMessageBits.push(generateSlackMessageBit(domain, refreshReason))
         }
@@ -108,7 +108,7 @@ Feed refresh to be sent to:${messageBits.join('')}\`\`\``
 
             const refreshReason = outdatedDsr
                 ? `outdated dsr: ${lastForwardedPotData.dsr.toString()}`
-                : `stale rho: ${lastForwardedPotData.rho.toString()}`
+                : `stale rho: ${formatTimestamp(Number(lastForwardedPotData.rho))}`
 
             slackMessageBits.push(generateSlackMessageBit(domain, refreshReason))
         }
@@ -125,7 +125,7 @@ Feed refresh to be sent to:${messageBits.join('')}\`\`\``
         await sendMessageToSlack(
             axios,
             slackWebhookUrl,
-        )(generateSlackMessage(slackMessageBits, currentDsr.toString(), latestTimestamp.toString()))
+        )(generateSlackMessage(slackMessageBits, currentDsr.toString(), latestTimestamp))
     }
     return {
         canExec: true,
