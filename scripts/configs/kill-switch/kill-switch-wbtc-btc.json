@@ -9,7 +9,7 @@
     "trigger": {
         "type": "event",
         "filter": {
-            "address": "0xD7623f1d24b35c392862fB67C9716564A117C9DE",
+            "address": "0xA5e3A55cEa42B86560a5215094981c300899199D",
             "topicsInfo": [
                 {
                     "abiName": "oracleAggregator",
