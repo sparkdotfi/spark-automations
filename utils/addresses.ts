@@ -22,6 +22,7 @@ export const addresses = {
             optimismStyle: {
                 base: '0x8Ed551D485701fe489c215E13E42F6fc59563e0e',
                 optimism: '0x4042127DecC0cF7cc0966791abebf7F76294DeF3',
+                worldChain: '0xA34437dAAE56A7CC6DC757048933D7777b3e547B',
             },
         },
         priceSources: {
