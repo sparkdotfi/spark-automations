@@ -1,0 +1,45 @@
+[
+    {
+        "inputs": [],
+        "name": "getLastSeenPotData",
+        "outputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "uint96",
+                        "name": "dsr",
+                        "type": "uint96"
+                    },
+                    {
+                        "internalType": "uint120",
+                        "name": "chi",
+                        "type": "uint120"
+                    },
+                    {
+                        "internalType": "uint40",
+                        "name": "rho",
+                        "type": "uint40"
+                    }
+                ],
+                "internalType": "struct IForwarderBase.PotData",
+                "name": "",
+                "type": "tuple"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint32",
+                "name": "gasLimit",
+                "type": "uint32"
+            }
+        ],
+        "name": "refresh",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    }
+]

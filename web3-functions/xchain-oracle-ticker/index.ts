@@ -3,7 +3,7 @@ import { Web3Function, Web3FunctionContext } from '@gelatonetwork/web3-functions
 import axios from 'axios'
 import { providers, utils } from 'ethers'
 
-import { forwarderAbi, forwarderArbitrumAbi, multicallAbi, potAbi } from '../../abis'
+import { forwarderAbi, forwarderArbitrumAbi, forwarderUpdatedAbi, multicallAbi, potAbi } from '../../abis'
 import { addresses, formatChi, formatDsr, formatTimestamp, sendMessageToSlack } from '../../utils'
 
 const arbitrumDomainUrls: Record<string, string | undefined> = {
@@ -36,6 +36,7 @@ Feed refresh to be sent to:${messageBits.join('')}\`\`\``
 
     const optimismStyleForwarderAddresses = addresses.mainnet.dsrForwarders.optimismStyle
     const arbitrumStyleForwarderAddresses = addresses.mainnet.dsrForwarders.arbitrumStyle
+    const updatedOptimismStyleForwarderAddresses = addresses.mainnet.dsrForwarders.updatedOptimismStyle
 
     const multicall = new Contract(addresses.mainnet.multicall, multicallAbi, provider)
     const pot = new Contract(addresses.mainnet.pot, potAbi, provider)
@@ -53,6 +54,7 @@ Feed refresh to be sent to:${messageBits.join('')}\`\`\``
     for (const forwarderAddress of [
         ...Object.values(optimismStyleForwarderAddresses),
         ...Object.values(arbitrumStyleForwarderAddresses),
+        ...Object.values(updatedOptimismStyleForwarderAddresses),
     ]) {
         multicallCalls.push({
             target: forwarderAddress,
@@ -76,6 +78,33 @@ Feed refresh to be sent to:${messageBits.join('')}\`\`\``
             callsToExecute.push({
                 to: forwarderAddress,
                 data: forwarderInterface.encodeFunctionData('refresh', [gasLimit]),
+            })
+
+            const refreshReason = outdatedDsr
+                ? `outdated dsr: ${formatDsr(lastForwardedPotData.dsr.toString())}`
+                : `stale rho: ${formatTimestamp(Number(lastForwardedPotData.rho))}`
+
+            slackMessageBits.push(generateSlackMessageBit(domain, refreshReason))
+        }
+    }
+
+    const updatedForwarderInterface = new utils.Interface(forwarderUpdatedAbi)
+
+    for (const [domain, forwarderAddress] of Object.entries(updatedOptimismStyleForwarderAddresses)) {
+        const lastForwardedPotData = updatedForwarderInterface.decodeFunctionResult(
+            'getLastSeenPotData',
+            multicallResults[0],
+        )[0]
+
+        multicallResults = multicallResults.slice(1)
+
+        const outdatedDsr = BigInt(lastForwardedPotData.dsr) != BigInt(currentDsr)
+        const staleRho = BigInt(latestTimestamp) > BigInt(lastForwardedPotData.rho) + maxDelta
+
+        if (outdatedDsr || staleRho) {
+            callsToExecute.push({
+                to: forwarderAddress,
+                data: updatedForwarderInterface.encodeFunctionData('refresh', [gasLimit]),
             })
 
             const refreshReason = outdatedDsr

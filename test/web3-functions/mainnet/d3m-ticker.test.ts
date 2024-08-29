@@ -6,7 +6,7 @@ import { Web3FunctionResultCallData } from '@gelatonetwork/web3-functions-sdk/*'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { SnapshotRestorer, takeSnapshot } from '@nomicfoundation/hardhat-network-helpers'
 
-import { d3mHubAbi, multicallAbi, vatAbi } from '../../../abis'
+import { d3mHubAbi, vatAbi } from '../../../abis'
 import { addresses, ilk } from '../../../utils'
 
 const { w3f, ethers } = hre
@@ -27,7 +27,7 @@ describe('d3mTicker', function () {
     let threshold: string
 
     const userArgs = { threshold: 0, performGasCheck: false, sendSlackMessages: false }
-    const artDifferenceOnTheFork = BigInt('43108457969557943776482696')
+    const artDifferenceOnTheFork = BigInt('8446563830271303300236973')
 
     before(async () => {
         cleanStateRestorer = await takeSnapshot()

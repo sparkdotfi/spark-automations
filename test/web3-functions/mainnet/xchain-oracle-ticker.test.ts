@@ -29,6 +29,7 @@ describe('xchainOracleTicker', function () {
     let pot: Contract
 
     let optimismStyleForwarderAddresses: string[]
+    let updatedOptimismStyleForwarderAddresses: string[]
     let arbitrumStyleForwarderAddresses: string[]
     let allForwarderAddresses: string[]
 
@@ -48,8 +49,13 @@ describe('xchainOracleTicker', function () {
         pauseProxy = await ethers.getSigner(addresses.mainnet.pauseProxy)
 
         optimismStyleForwarderAddresses = Object.values(addresses.mainnet.dsrForwarders.optimismStyle)
+        updatedOptimismStyleForwarderAddresses = Object.values(addresses.mainnet.dsrForwarders.updatedOptimismStyle)
         arbitrumStyleForwarderAddresses = Object.values(addresses.mainnet.dsrForwarders.arbitrumStyle)
-        allForwarderAddresses = [...optimismStyleForwarderAddresses, ...arbitrumStyleForwarderAddresses]
+        allForwarderAddresses = [
+            ...optimismStyleForwarderAddresses,
+            ...updatedOptimismStyleForwarderAddresses,
+            ...arbitrumStyleForwarderAddresses,
+        ]
 
         pot = new Contract(addresses.mainnet.pot, potAbi, pauseProxy)
         forwarderInterface = new utils.Interface(forwarderAbi)
@@ -76,7 +82,7 @@ describe('xchainOracleTicker', function () {
         !result.canExec && expect(result.message).to.equal('Pot data refresh not needed')
     })
 
-    it('one refresh is needed (stale rho)', async () => {
+    it('some refreshes are needed (stale rho)', async () => {
         const rhoDeltas = await Promise.all(
             allForwarderAddresses.map(async (forwarderAddress) => {
                 const forwarder = new Contract(forwarderAddress, forwarderInterface, reader)
@@ -101,25 +107,26 @@ describe('xchainOracleTicker', function () {
         }
         const callData = result.callData as Web3FunctionResultCallData[]
 
-        expect(callData).to.have.length(1)
+        expect(callData).to.have.length(3)
 
-        expect(callData[0].to).to.equal(allForwarderAddresses[rhoDeltas.indexOf(largestRhoDelta)])
-
-        const forwarder = new Contract(callData[0].to, forwarderInterface, reader)
         const potRho = (await pot.rho()).toNumber()
-        const rhoBefore = (await forwarder.getLastSeenPotData()).rho
 
-        await insistOnExecution(() =>
-            keeper.sendTransaction({
-                to: callData[0].to,
-                data: callData[0].data,
-            }),
-        )
+        for (const data of callData) {
+            const forwarder = new Contract(data.to, forwarderInterface, reader)
+            const rhoBefore = (await forwarder.getLastSeenPotData()).rho
 
-        const rhoAfter = (await forwarder.getLastSeenPotData()).rho
+            await insistOnExecution(() =>
+                keeper.sendTransaction({
+                    to: data.to,
+                    data: data.data,
+                }),
+            )
 
-        expect(rhoBefore).to.be.lessThan(potRho)
-        expect(rhoAfter).to.equal(potRho)
+            const rhoAfter = (await forwarder.getLastSeenPotData()).rho
+
+            expect(rhoBefore).to.be.lessThan(potRho)
+            expect(rhoAfter).to.equal(potRho)
+        }
     })
 
     it('all refreshes are needed (stale rho)', async () => {
