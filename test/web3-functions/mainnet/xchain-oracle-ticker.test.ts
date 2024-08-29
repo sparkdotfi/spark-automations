@@ -51,7 +51,11 @@ describe('xchainOracleTicker', function () {
         optimismStyleForwarderAddresses = Object.values(addresses.mainnet.dsrForwarders.optimismStyle)
         updatedOptimismStyleForwarderAddresses = Object.values(addresses.mainnet.dsrForwarders.updatedOptimismStyle)
         arbitrumStyleForwarderAddresses = Object.values(addresses.mainnet.dsrForwarders.arbitrumStyle)
-        allForwarderAddresses = [...optimismStyleForwarderAddresses, ...updatedOptimismStyleForwarderAddresses, ...arbitrumStyleForwarderAddresses]
+        allForwarderAddresses = [
+            ...optimismStyleForwarderAddresses,
+            ...updatedOptimismStyleForwarderAddresses,
+            ...arbitrumStyleForwarderAddresses,
+        ]
 
         pot = new Contract(addresses.mainnet.pot, potAbi, pauseProxy)
         forwarderInterface = new utils.Interface(forwarderAbi)

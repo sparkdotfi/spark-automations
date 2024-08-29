@@ -142,7 +142,7 @@ describe('CapAutomator', function () {
                     const amountInFullTokens = (BigInt(gap) * BigInt(percentageOfTheGapTooSmallToTrigger)) / BigInt(100)
 
                     // supplying only 1/4 of the full amount
-                    await supply(rethWhale, reth, amountInFullTokens * BigInt(10 **18))
+                    await supply(rethWhale, reth, amountInFullTokens * BigInt(10 ** 18))
 
                     const { result } = await capAutomatorW3F.run('onRun', { userArgs: { ...userArgs, threshold } })
 
@@ -159,7 +159,7 @@ describe('CapAutomator', function () {
                     const amountInFullTokens = (BigInt(gap) * BigInt(percentageOfTheGapNeededForTrigger)) / BigInt(100)
 
                     // supplying only 1/4 of the full supply amount
-                    await supply(rethWhale, reth, (amountInFullTokens * BigInt(10 **18)) / BigInt(4))
+                    await supply(rethWhale, reth, (amountInFullTokens * BigInt(10 ** 18)) / BigInt(4))
 
                     const { result: negativeResult } = await capAutomatorW3F.run('onRun', {
                         userArgs: { ...userArgs, threshold },
@@ -168,7 +168,7 @@ describe('CapAutomator', function () {
                     expect(negativeResult.canExec).to.equal(false)
 
                     // supplying remaining of the full supply amount
-                    await supply(rethWhale, reth, (amountInFullTokens * BigInt(10 **18) * BigInt(3)) / BigInt(4))
+                    await supply(rethWhale, reth, (amountInFullTokens * BigInt(10 ** 18) * BigInt(3)) / BigInt(4))
 
                     const { result: positiveResult } = await capAutomatorW3F.run('onRun', {
                         userArgs: { ...userArgs, threshold },
@@ -209,11 +209,11 @@ describe('CapAutomator', function () {
                     const amountInFullTokens = (BigInt(gap) * BigInt(percentageOfTheGapNeededForTrigger)) / BigInt(100)
 
                     // supplying only 1/4 of the full supply amount
-                    await supply(rethWhale, reth, amountInFullTokens * BigInt(10 **18))
+                    await supply(rethWhale, reth, amountInFullTokens * BigInt(10 ** 18))
 
                     await insistOnExecution(() => capAutomator.exec(reth))
 
-                    await withdraw(rethWhale, reth, amountInFullTokens * BigInt(10 **18))
+                    await withdraw(rethWhale, reth, amountInFullTokens * BigInt(10 ** 18))
 
                     const { result: positiveResult } = await capAutomatorW3F.run('onRun', {
                         userArgs: { ...userArgs, threshold },
@@ -260,7 +260,7 @@ describe('CapAutomator', function () {
                     await insistOnExecution(() => capAutomator.exec(wsteth))
 
                     await withdraw(wstethWhale, wsteth, wstethAmountInFullTokens * BigInt(10 ** 18))
-                    await supply(rethWhale, reth, rethAmountInFullTokens * BigInt(10 **18))
+                    await supply(rethWhale, reth, rethAmountInFullTokens * BigInt(10 ** 18))
 
                     const { result } = await capAutomatorW3F.run('onRun', { userArgs: { ...userArgs, threshold } })
 
@@ -306,7 +306,7 @@ describe('CapAutomator', function () {
     describe('execBorrow', () => {
         beforeEach(async () => {
             await supply(wstethWhale, wsteth, BigInt(40000) * BigInt(10 ** 18))
-            await supply(rethWhale, reth, BigInt(400) * BigInt(10 **18))
+            await supply(rethWhale, reth, BigInt(400) * BigInt(10 ** 18))
             await insistOnExecution(() => capAutomator.execSupply(wsteth))
             await insistOnExecution(() => capAutomator.execSupply(reth))
             await mine(2, { interval: 24 * 60 * 60 })
@@ -326,7 +326,7 @@ describe('CapAutomator', function () {
                     const amountInFullTokens = (BigInt(gap) * BigInt(percentageOfTheGapTooSmallToTrigger)) / BigInt(100)
 
                     // borrowing only 1/4 of the full amount
-                    await borrow(rethWhale, wsteth, (amountInFullTokens * BigInt(10 **18)) / BigInt(4))
+                    await borrow(rethWhale, wsteth, (amountInFullTokens * BigInt(10 ** 18)) / BigInt(4))
 
                     const { result } = await capAutomatorW3F.run('onRun', { userArgs: { ...userArgs, threshold } })
 
@@ -509,7 +509,7 @@ describe('CapAutomator', function () {
                     const borrowAmountInFullTokens =
                         (BigInt(borrowGap) * BigInt(percentageOfTheGapNeededForTrigger)) / BigInt(100)
 
-                    await supply(rethWhale, reth, BigInt(400) * BigInt(10 **18))
+                    await supply(rethWhale, reth, BigInt(400) * BigInt(10 ** 18))
                     await insistOnExecution(() => capAutomator.execSupply(reth))
 
                     await supply(wstethWhale, wsteth, supplyAmountInFullTokens * BigInt(10 ** 18))
@@ -559,7 +559,7 @@ describe('CapAutomator', function () {
                     const borrowAmountInFullTokens =
                         (BigInt(borrowGap) * BigInt(percentageOfTheGapNeededForTrigger)) / BigInt(100)
 
-                    await supply(rethWhale, reth, BigInt(400) * BigInt(10 **18))
+                    await supply(rethWhale, reth, BigInt(400) * BigInt(10 ** 18))
                     await insistOnExecution(() => capAutomator.execSupply(reth))
 
                     await supply(wstethWhale, wsteth, supplyAmountInFullTokens * BigInt(10 ** 18))
@@ -622,10 +622,10 @@ describe('CapAutomator', function () {
                         (BigInt(rethBorrowGap) * BigInt(percentageOfTheGapNeededForTrigger)) / BigInt(100)
 
                     await supply(wstethWhale, wsteth, wstethSupplyAmountInFullTokens * BigInt(10 ** 18))
-                    await supply(rethWhale, reth, rethSupplyAmountInFullTokens * BigInt(10 **18))
+                    await supply(rethWhale, reth, rethSupplyAmountInFullTokens * BigInt(10 ** 18))
 
                     await borrow(rethWhale, wsteth, wstethBorrowAmountInFullTokens * BigInt(10 ** 18))
-                    await borrow(wstethWhale, reth, rethBorrowAmountInFullTokens * BigInt(10 **18))
+                    await borrow(wstethWhale, reth, rethBorrowAmountInFullTokens * BigInt(10 ** 18))
 
                     const { result: positiveResult } = await capAutomatorW3F.run('onRun', {
                         userArgs: { ...userArgs, threshold },
@@ -696,7 +696,7 @@ describe('CapAutomator', function () {
                     const wethBorrowAmountInFullTokens =
                         (BigInt(wethBorrowGap) * BigInt(percentageOfTheGapNeededForTrigger)) / BigInt(100)
 
-                    await supply(rethWhale, reth, rethSupplyAmountInFullTokens * BigInt(10 **18))
+                    await supply(rethWhale, reth, rethSupplyAmountInFullTokens * BigInt(10 ** 18))
                     await supply(wstethWhale, wsteth, wstethSupplyAmountInFullTokens * BigInt(10 ** 18))
 
                     await borrow(rethWhale, wsteth, wstethBorrowAmountInFullTokens * BigInt(10 ** 18))
