@@ -35,8 +35,8 @@ CHI: ${formatChi(currentChi)}
 Feed refresh to be sent to:${messageBits.join('')}\`\`\``
 
     const optimismStyleForwarderAddresses = addresses.mainnet.dsrForwarders.optimismStyle
-    const arbitrumStyleForwarderAddresses = addresses.mainnet.dsrForwarders.arbitrumStyle
     const updatedOptimismStyleForwarderAddresses = addresses.mainnet.dsrForwarders.updatedOptimismStyle
+    const arbitrumStyleForwarderAddresses = addresses.mainnet.dsrForwarders.arbitrumStyle
 
     const multicall = new Contract(addresses.mainnet.multicall, multicallAbi, provider)
     const pot = new Contract(addresses.mainnet.pot, potAbi, provider)
@@ -53,8 +53,8 @@ Feed refresh to be sent to:${messageBits.join('')}\`\`\``
     const forwarderInterface = new utils.Interface(forwarderAbi)
     for (const forwarderAddress of [
         ...Object.values(optimismStyleForwarderAddresses),
-        ...Object.values(arbitrumStyleForwarderAddresses),
         ...Object.values(updatedOptimismStyleForwarderAddresses),
+        ...Object.values(arbitrumStyleForwarderAddresses),
     ]) {
         multicallCalls.push({
             target: forwarderAddress,
