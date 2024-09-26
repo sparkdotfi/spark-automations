@@ -107,7 +107,7 @@ describe('xchainOracleTicker', function () {
         }
         const callData = result.callData as Web3FunctionResultCallData[]
 
-        expect(callData).to.have.length(3)
+        expect(callData).to.have.length(1)
 
         const potRho = (await pot.rho()).toNumber()
 

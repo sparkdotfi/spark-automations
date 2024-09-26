@@ -31,7 +31,7 @@ const ETHERSCAN_KEY = process.env.ETHERSCAN_KEY
 
 let forking = {
     url: `https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_ID}`,
-    blockNumber: 20627610, // 2024-08-28 02:13:35
+    blockNumber: 20833830, // 2024-09-26 09:15:59
 } as HardhatNetworkForkingUserConfig
 
 if (TEST_NETWORK == 'mainnet') {
