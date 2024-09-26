@@ -51,8 +51,6 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
             ? BigInt(artBefore) - BigInt(artAfter)
             : BigInt(artAfter) - BigInt(artBefore)
 
-            console.log('artDifference', artDifference)
-
     if (artDifference < threshold) {
         return {
             canExec: false,
