@@ -1,0 +1,213 @@
+[
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_susds",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "_l2Oracle",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "_l1CrossDomain",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "constructor"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint8",
+                "name": "bits",
+                "type": "uint8"
+            },
+            {
+                "internalType": "uint256",
+                "name": "value",
+                "type": "uint256"
+            }
+        ],
+        "name": "SafeCastOverflowedUintDowncast",
+        "type": "error"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "uint96",
+                        "name": "ssr",
+                        "type": "uint96"
+                    },
+                    {
+                        "internalType": "uint120",
+                        "name": "chi",
+                        "type": "uint120"
+                    },
+                    {
+                        "internalType": "uint40",
+                        "name": "rho",
+                        "type": "uint40"
+                    }
+                ],
+                "indexed": false,
+                "internalType": "struct ISSROracle.SUSDSData",
+                "name": "susdsData",
+                "type": "tuple"
+            }
+        ],
+        "name": "LastSeenSUSDSDataUpdated",
+        "type": "event"
+    },
+    {
+        "inputs": [],
+        "name": "_lastSeenSUSDSData",
+        "outputs": [
+            {
+                "internalType": "uint96",
+                "name": "ssr",
+                "type": "uint96"
+            },
+            {
+                "internalType": "uint120",
+                "name": "chi",
+                "type": "uint120"
+            },
+            {
+                "internalType": "uint40",
+                "name": "rho",
+                "type": "uint40"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "getLastSeenChi",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "getLastSeenRho",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "getLastSeenSSR",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "getLastSeenSUSDSData",
+        "outputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "uint96",
+                        "name": "ssr",
+                        "type": "uint96"
+                    },
+                    {
+                        "internalType": "uint120",
+                        "name": "chi",
+                        "type": "uint120"
+                    },
+                    {
+                        "internalType": "uint40",
+                        "name": "rho",
+                        "type": "uint40"
+                    }
+                ],
+                "internalType": "struct ISSROracle.SUSDSData",
+                "name": "",
+                "type": "tuple"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "l1CrossDomain",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "l2Oracle",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint32",
+                "name": "gasLimit",
+                "type": "uint32"
+            }
+        ],
+        "name": "refresh",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "susds",
+        "outputs": [
+            {
+                "internalType": "contract ISUSDS",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    }
+]

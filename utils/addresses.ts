@@ -12,6 +12,7 @@ export const addresses = {
         pot: '0x197E90f9FAD81970bA7976f33CbD77088E5D7cf7',
         protocolDataProvider: '0xFc21d6d146E6086B8359705C8b28512a983db0cb',
         reth: '0xae78736Cd615f374D3085123A210448E74Fc6393',
+        susds: '0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD',
         vat: '0x35D1b3F3D7966A1DFe207aa4514C12a259A0492B',
         wbtc: '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599',
         weth: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
@@ -26,6 +27,11 @@ export const addresses = {
             },
             updatedOptimismStyle: {
                 worldChain: '0xA34437dAAE56A7CC6DC757048933D7777b3e547B',
+            },
+        },
+        ssrForwarders: {
+            optimismStyle: {
+                base: '0xB2833392527f41262eB0E3C7b47AFbe030ef188E',
             },
         },
         priceSources: {
