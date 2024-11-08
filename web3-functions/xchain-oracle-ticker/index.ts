@@ -123,8 +123,8 @@ Feed refresh to be sent to:${messageBits.join('')}\`\`\``
         }
         const arbitrumProvider = new providers.JsonRpcProvider(arbitrumDomainUrls[forwarderAddress])
 
-        const baseFee = (await provider.getGasPrice()).mul(120).div(100)
-        const maxFeePerGas = (await arbitrumProvider.getGasPrice()).mul(120).div(100)
+        const baseFee = (await provider.getGasPrice()).mul(5).div(2)
+        const maxFeePerGas = (await arbitrumProvider.getGasPrice()).mul(5).div(2)
 
         const lastForwardedPotData = forwarderInterface.decodeFunctionResult(
             'getLastSeenPotData',
