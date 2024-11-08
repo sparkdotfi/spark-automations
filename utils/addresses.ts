@@ -1,5 +1,6 @@
 export const addresses = {
     mainnet: {
+        almController: '0xcc0c5ADF6649256d3cE6084eCf94AF5D01440b6C', // TODO change from staging to production
         capAutomator: '0x2276f52afba7Cf2525fd0a050DF464AC8532d0ef',
         d3mHub: '0x12F36cdEA3A28C35aC8C6Cc71D9265c17C74A27F',
         d3mPool: '0xAfA2DD8a0594B2B24B59de405Da9338C4Ce23437',
@@ -38,6 +39,9 @@ export const addresses = {
             wbtcBtc: '0xfdFD9C85aD200c506Cf9e21F1FD8dd01932FBB23',
             stethEth: '0x86392dC19c0b719886221c78AB11eb8Cf5c52812',
         },
+    },
+    base: {
+        almController: '0xD26112Ce8f7BE0834dBcfd018042bF76d68Ff42a', // TODO change from staging to production
     },
     gnosis: {
         executor: '0xc4218C1127cB24a0D6c1e7D25dc34e10f2625f5A',

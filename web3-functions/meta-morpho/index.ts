@@ -18,7 +18,7 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
     const morpho = new Contract(await metaMorpho.MORPHO(), morphoAbi, provider)
     const multicall = new Contract(addresses.mainnet.multicall, multicallAbi, provider)
 
-    const logs = await provider.getLogs({
+    const logs: Log[] = await provider.getLogs({
         address: addresses.mainnet.metaMorpho,
         topics: [metaMorpho.interface.getEventTopic('SubmitCap')],
         fromBlock: 19875940,
