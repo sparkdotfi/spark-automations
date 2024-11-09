@@ -6,7 +6,7 @@
         "sendSlackMessages": true
     },
     "secrets": {
-        "SLACK_WEBHOOK_URL": "SPARK_INFO_SLACK_WEBHOOK_URL"
+        "SLACK_WEBHOOK_URL": "SSR_ORACLES_ALERTS_SLACK_WEBHOOK_URL"
     },
     "trigger": {
         "type": "time",
