@@ -99,12 +99,12 @@ describe('GovernanceExecutor', function () {
         const payload = await payloadFactory.deploy()
         await mockReceiver.__callQueueOnExecutor(payload.address)
 
-        await mine(2, { interval: executionDelay - 1 })
+        await mine(2, { interval: executionDelay - 2 })
 
         const { result: negativeResult } = await governanceExecutorW3F.run('onRun', { userArgs })
         expect(negativeResult.canExec).to.equal(false)
 
-        await mine(2, { interval: 1 })
+        await mine(2, { interval: 2 })
 
         const { result: positiveResult } = await governanceExecutorW3F.run('onRun', { userArgs })
 
@@ -138,14 +138,14 @@ describe('GovernanceExecutor', function () {
 
         await mockReceiver.__callQueueOnExecutor(firstPayload.address)
 
-        await mine(2, { interval: executionDelay - 1 })
+        await mine(2, { interval: executionDelay - 2 })
 
         await mockReceiver.__callQueueOnExecutor(secondPayload.address)
 
         const { result: negativeResult } = await governanceExecutorW3F.run('onRun', { userArgs })
         expect(negativeResult.canExec).to.equal(false)
 
-        await mine(2, { interval: 1 })
+        await mine(2, { interval: 2 })
 
         const { result: positiveResult } = await governanceExecutorW3F.run('onRun', { userArgs })
 
@@ -180,12 +180,12 @@ describe('GovernanceExecutor', function () {
         await mockReceiver.__callQueueOnExecutor(firstPayload.address)
         await mockReceiver.__callQueueOnExecutor(secondPayload.address)
 
-        await mine(2, { interval: executionDelay - 1 })
+        await mine(2, { interval: executionDelay - 2 })
 
         const { result: negativeResult } = await governanceExecutorW3F.run('onRun', { userArgs })
         expect(negativeResult.canExec).to.equal(false)
 
-        await mine(2, { interval: 1 })
+        await mine(2, { interval: 2 })
 
         const { result: positiveResult } = await governanceExecutorW3F.run('onRun', { userArgs })
 
