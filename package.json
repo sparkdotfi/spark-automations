@@ -20,9 +20,10 @@
         "lint:fix": "yarn lint --fix",
         "lint:sol": "solhint contracts/**/*.sol",
         "test:mainnet": "export TEST_NETWORK=\"mainnet\" && npx hardhat test test/web3-functions/mainnet/*",
+        "test:base": "export TEST_NETWORK=\"base\" && npx hardhat test test/web3-functions/base/*",
         "test:gnosis": "export TEST_NETWORK=\"gnosis\" && npx hardhat test test/web3-functions/gnosis/*",
         "test:utils": "npx hardhat test test/utils/*",
-        "test": "yarn test:utils && yarn test:gnosis && yarn test:mainnet",
+        "test": "yarn test:utils && yarn test:base && yarn test:gnosis && yarn test:mainnet",
         "verify": "npx hardhat etherscan-verify",
         "w3f:test": "npx w3f test web3-functions/simple/index.ts --logs --chain-id=88153591557"
     },
