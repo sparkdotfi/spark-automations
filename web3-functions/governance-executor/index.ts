@@ -2,7 +2,7 @@ import { Contract } from '@ethersproject/contracts'
 import { Web3Function, Web3FunctionContext } from '@gelatonetwork/web3-functions-sdk'
 import axios from 'axios'
 
-import { baseGovernanceExecutorAbi,gnosisGovernanceExecutorAbi, multicallAbi } from '../../abis'
+import { baseGovernanceExecutorAbi, gnosisGovernanceExecutorAbi, multicallAbi } from '../../abis'
 import { addresses, sendMessageToSlack } from '../../utils'
 
 const foreignDomainAliases = ['gnosis', 'base'] as const
