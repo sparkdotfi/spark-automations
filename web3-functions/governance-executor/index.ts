@@ -2,7 +2,7 @@ import { Contract } from '@ethersproject/contracts'
 import { Web3Function, Web3FunctionContext } from '@gelatonetwork/web3-functions-sdk'
 import axios from 'axios'
 
-import { multicallAbi, gnosisGovernanceExecutorAbi, baseGovernanceExecutorAbi } from '../../abis'
+import { baseGovernanceExecutorAbi,gnosisGovernanceExecutorAbi, multicallAbi } from '../../abis'
 import { addresses, sendMessageToSlack } from '../../utils'
 
 const foreignDomainAliases = ['gnosis', 'base'] as const
@@ -11,22 +11,22 @@ type ForeignDomainAlias = (typeof foreignDomainAliases)[number]
 Web3Function.onRun(async (context: Web3FunctionContext) => {
     const { multiChainProvider, userArgs, secrets } = context
 
-    const domain = userArgs.domain as ForeignDomainAlias
-    const sendSlackMessages = userArgs.sendSlackMessages as boolean
-
-    const slackWebhookUrl = (await secrets.get('SLACK_WEBHOOK_URL')) as string
-
     let remoteExecutorAbi
-    if (domain === 'gnosis') {
+    if (userArgs.domain === 'gnosis') {
         remoteExecutorAbi = gnosisGovernanceExecutorAbi
-    } else if (domain === 'base') {
+    } else if (userArgs.domain === 'base') {
         remoteExecutorAbi = baseGovernanceExecutorAbi
     } else {
         return {
             canExec: false,
-            message: `Invalid domain: ${domain}`,
+            message: `Invalid domain: ${userArgs.domain}`,
         }
     }
+
+    const domain = userArgs.domain as ForeignDomainAlias
+    const sendSlackMessages = userArgs.sendSlackMessages as boolean
+
+    const slackWebhookUrl = (await secrets.get('SLACK_WEBHOOK_URL')) as string
 
     const executorAddress = addresses[domain].executor
     const multicallAddress = addresses[domain].multicall
