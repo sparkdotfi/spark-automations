@@ -42,6 +42,12 @@ if (TEST_NETWORK == 'mainnet') {
         url: `https://rpc.ankr.com/gnosis`,
         blockNumber: 33991690, // 2024-05-17 01:39:20
     }
+} else if (TEST_NETWORK == 'base') {
+    console.log('\nRunning Base Chain test suite')
+    forking = {
+        url: `https://base-mainnet.g.alchemy.com/v2/${ALCHEMY_ID}`,
+        blockNumber: 22209900, // 2024-11-10 03:25:47
+    }
 }
 
 // ================================= CONFIG =========================================
