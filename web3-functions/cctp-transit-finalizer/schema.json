@@ -4,9 +4,6 @@
     "memory": 128,
     "timeout": 300,
     "userArgs": {
-        "performGasCheck": "boolean",
-        "sendSlackMessages": "boolean",
-        "initializationLookupRangeStart": "number",
-        "initializationLookupRangeEnd": "number"
+        "sendSlackMessages": "boolean"
     }
 }

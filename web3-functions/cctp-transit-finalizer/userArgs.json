@@ -1,6 +1,3 @@
 {
-    "performGasCheck": false,
-    "sendSlackMessages": false,
-    "initializationLookupRangeStart": 7200,
-    "initializationLookupRangeEnd": 172800
+    "sendSlackMessages": false
 }

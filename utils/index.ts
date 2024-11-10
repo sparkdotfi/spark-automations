@@ -7,8 +7,5 @@ export * from './formatDsr'
 export * from './formatThousandSeparators'
 export * from './formatTimestamp'
 export * from './gasAboveAverage'
-export * from './getBlockNumberAtOrBefore'
 export * from './insistOnExecution'
 export * from './sendMessageToSlack'
-
-export * from './types'
