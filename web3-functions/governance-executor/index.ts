@@ -14,6 +14,8 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
     const domain = userArgs.domain as ForeignDomainAlias
     const sendSlackMessages = userArgs.sendSlackMessages as boolean
 
+    const slackWebhookUrl = (await secrets.get('SLACK_WEBHOOK_URL')) as string
+
     let remoteExecutorAbi
     if (domain === 'gnosis') {
         remoteExecutorAbi = gnosisGovernanceExecutorAbi
@@ -26,13 +28,10 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
         }
     }
 
-    const slackWebhookUrl = (await secrets.get('SLACK_WEBHOOK_URL')) as string
-
     const executorAddress = addresses[domain].executor
     const multicallAddress = addresses[domain].multicall
 
     const provider = multiChainProvider.default()
-
 
     const executor = new Contract(executorAddress, remoteExecutorAbi, provider)
     const multicall = new Contract(multicallAddress, multicallAbi, provider)
