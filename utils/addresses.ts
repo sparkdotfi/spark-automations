@@ -40,14 +40,12 @@ export const addresses = {
             stethEth: '0x86392dC19c0b719886221c78AB11eb8Cf5c52812',
         },
     },
-    base: {
-        almController: '0xD26112Ce8f7BE0834dBcfd018042bF76d68Ff42a', // TODO change from staging to production
-    },
     gnosis: {
         executor: '0xc4218C1127cB24a0D6c1e7D25dc34e10f2625f5A',
         multicall: '0xcA11bde05977b3631167028862bE2a173976CA11',
     },
     base: {
+        almController: '0xD26112Ce8f7BE0834dBcfd018042bF76d68Ff42a', // TODO change from staging to production
         executor: '0xF93B7122450A50AF3e5A76E1d546e95Ac1d0F579',
         multicall: '0xcA11bde05977b3631167028862bE2a173976CA11',
     },

@@ -1,3 +1,4 @@
+export { default as almControllerAbi } from './almController.json'
 export { default as baseGovernanceExecutorAbi } from './baseGovernanceExecutor.json'
 export { default as capAutomatorAbi } from './capAutomator.json'
 export { default as d3mHubAbi } from './d3mHub.json'
