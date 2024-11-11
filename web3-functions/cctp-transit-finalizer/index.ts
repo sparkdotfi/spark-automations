@@ -1,66 +1,97 @@
 import { Web3Function, Web3FunctionContext } from '@gelatonetwork/web3-functions-sdk'
 
 import { addresses } from '../../utils'
+import { fetchInitializationEvents } from './fetchInitializationEvents'
+import { filterOutFinalizedInitializations } from './filterOutFinalizedInitializations'
 
-export interface CctpInitialization {
-  txHash: string
-  transitId: TransitId
+export interface CctpTransitInitialization {
+    nonce: number
+    sourceDomain: number
+    destinationDomain: number
+    txHash: string
 }
 
-const supportedChainIds = [1, 8453] as const
-type SupportedChainId = typeof supportedChainIds[number]
+const supportedChains = ['mainnet', 'base'] as const
+type SupportedChains = (typeof supportedChains)[number]
 
+const isSupported = (name: string | undefined): name is SupportedChains => {
+    return (supportedChains as readonly string[]).includes(name ?? '')
+}
 
-const supportedCctpDomainIds = [0, 6] as const
-type SupportedCctpDomainId = typeof supportedCctpDomainIds[number]
-
-export type TransitId = `${SupportedCctpDomainId}-${SupportedCctpDomainId}-${bigint}`
+const supportedCctpDomainIds = {
+    mainnet: 0,
+    base: 6,
+} as const
 
 const ESTIMATED_MAINNET_BLOCKS_PER_HOUR = 4 * 60
 const ESTIMATED_BASE_BLOCKS_PER_HOUR = 32 * 60
 
 const lookUpRanges = {
-    1: {
+    mainnet: {
         fromBlock: ESTIMATED_MAINNET_BLOCKS_PER_HOUR * 2,
         toBlock: ESTIMATED_MAINNET_BLOCKS_PER_HOUR * 24,
     },
-    8453: {
+    base: {
         fromBlock: ESTIMATED_BASE_BLOCKS_PER_HOUR * 2,
         toBlock: ESTIMATED_BASE_BLOCKS_PER_HOUR * 24,
-    }
-} as const
-
-const almControllerAddresses = {
-    1: addresses.mainnet.almController,
-    8453: addresses.base.almController,
+    },
 } as const
 
 Web3Function.onRun(async (context: Web3FunctionContext) => {
-    const { multiChainProvider, userArgs, gelatoArgs, secrets } = context
-
-    const keepersChainId = gelatoArgs.chainId as SupportedChainId
-
-    const sendSlackMessages = userArgs.sendSlackMessages as boolean
-    const slackWebhookUrl = (await secrets.get('SLACK_WEBHOOK_URL')) as string
-
-    const sourceChainIds = supportedChainIds.filter((chainId) => chainId !== keepersChainId)
-
-    for (const chainId of sourceChainIds) {
-
-        const initializationEvents = await fetchInitializationEvents(multiChainProvider.chainId(chainId), {
-            fromBlock: lookUpRanges[chainId].fromBlock,
-            toBlock: lookUpRanges[chainId].toBlock,
-            almControllerAddress: almControllerAddresses[chainId],
-        })
-
-        // TODO Filter out all events that are not targeting the domain the keeper is deployed to
-
-        //  TODO For each initialization event, targeting this domain, call `usedNonces(bytes32)` on MessageTransmitter to check if the initialization has already been finalized
-        //       For each not finalized initialization, add it to a list of initializations to finalize
+    const { multiChainProvider, gelatoArgs } = context
+    const providers = {
+        mainnet: multiChainProvider.chainId(1),
+        base: multiChainProvider.chainId(8453),
     }
 
-        // TODO For each initialization to finalize fetch message and attestation from CCTP API and order a finalization
-        //      For each finalization, send a slack message if `sendSlackMessages` is true
+    const keepersChainId = gelatoArgs.chainId
+
+    let keepersChainName
+    if (keepersChainId === 1) {
+        keepersChainName = 'mainnet'
+    } else if (keepersChainId === 8453) {
+        keepersChainName = 'base'
+    }
+
+    if (!isSupported(keepersChainName)) {
+        return {
+            canExec: false,
+            message: 'Chain not supported',
+        }
+    }
+
+    const sourceChains = supportedChains.filter((chain) => chain !== keepersChainName)
+
+    let combinedInitializations: CctpTransitInitialization[] = []
+
+    for (const chainName of sourceChains) {
+        const initializationEvents = await fetchInitializationEvents(providers[chainName], {
+            fromBlock: lookUpRanges[chainName].fromBlock,
+            toBlock: lookUpRanges[chainName].toBlock,
+            almControllerAddress: addresses[chainName].almController,
+            sourceDomainCctpAlias: supportedCctpDomainIds[chainName],
+            destinationDomainCctpAlias: supportedCctpDomainIds[keepersChainName],
+        })
+        combinedInitializations = [...combinedInitializations, ...initializationEvents]
+    }
+
+    const nonFinalizedInitializations = await filterOutFinalizedInitializations(providers[keepersChainName], {
+        initializations: combinedInitializations,
+        multicallAddress: addresses[keepersChainName].messageTransmitter,
+        messageTransmitterAddress: addresses[keepersChainName].multicall,
+    })
+
+    if (nonFinalizedInitializations.length === 0) {
+        return {
+            canExec: false,
+            message: 'No pending initializations to finalize',
+        }
+    }
+
+    // TODO For each of the nonFinalizedInitializations
+    //      1. Fetch message and attestation from CCTP API
+    //      2. Add to a combined slack message
+    //      3. Create a call to finalize the initialization for Gelato
 
     return {
         canExec: false,

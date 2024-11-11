@@ -6,6 +6,7 @@ export const addresses = {
         d3mPool: '0xAfA2DD8a0594B2B24B59de405Da9338C4Ce23437',
         executor: '0x3300f198988e4C9C63F75dF86De36421f06af8c4',
         killSwitchOracle: '0x909A86f78e1cdEd68F9c2Fe2c9CD922c401abe82',
+        messageTransmitter: '0x0a992d191deec32afe36203ad87d7d289a738f81',
         metaMorpho: '0x73e65DBD630f90604062f6E02fAb9138e713edD9',
         multicall: '0xeefBa1e63905eF1D7ACbA5a8513c70307C1cE441',
         pauseProxy: '0xBE8E3e3618f7474F8cB1d074A26afFef007E98FB',
@@ -47,6 +48,7 @@ export const addresses = {
     base: {
         almController: '0xD26112Ce8f7BE0834dBcfd018042bF76d68Ff42a', // TODO change from staging to production
         executor: '0xF93B7122450A50AF3e5A76E1d546e95Ac1d0F579',
+        messageTransmitter: '0xAD09780d193884d503182aD4588450C416D6F9D4',
         multicall: '0xcA11bde05977b3631167028862bE2a173976CA11',
     },
 } as const

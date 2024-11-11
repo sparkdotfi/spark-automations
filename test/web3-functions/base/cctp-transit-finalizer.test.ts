@@ -1,17 +1,18 @@
-import hre from 'hardhat'
-import { fetchInitializationEvents } from '../../../web3-functions/cctp-transit-finalizer/fetchInitializationEvents'
+import { expect } from 'chai'
+import { computeCctpNonceAndSourceHash } from '../../../web3-functions/cctp-transit-finalizer/computeCctpNonceAndSourceHash'
 
-describe.only('CCTP Transit Finalizer', function() {
+describe.only('CCTP Transit Finalizer', function () {
     this.timeout(0)
 
-    describe('fetchInitializationEvents', () => {
-        it('test', async () => {
-            await fetchInitializationEvents(hre.ethers.provider, {
-                fromBlock: 6915697,
-                toBlock: 7031343,
-                almControllerAddress: '0x61B989D473a977884Ac73A3726e1d2f7A6b50e07',
-                destinationDomainCctpAlias: 0,
-            })
+    describe('computeCctpNonceAndSourceHash', () => {
+        it('computes a correct hash', async () => {
+            expect(computeCctpNonceAndSourceHash(126243, 0)).to.equal(
+                '0xb9aaef599f642b85caf4949c74327c1644d1c91b524ea2d2c73440c67c4018f9',
+            )
         })
+    })
+
+    describe('filterOutFinalizedInitializations', () => {
+        it.skip('correctly filters out transit initializations that were already finalized', async () => {})
     })
 })
