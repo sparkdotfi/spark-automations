@@ -1,6 +1,7 @@
+import axios from 'axios'
 import { Web3Function, Web3FunctionContext } from '@gelatonetwork/web3-functions-sdk'
 
-import { addresses } from '../../utils'
+import { addresses, sendMessageToSlack } from '../../utils'
 import { fetchInitializationEvents } from './fetchInitializationEvents'
 import { filterOutFinalizedInitializations } from './filterOutFinalizedInitializations'
 
@@ -38,13 +39,16 @@ const lookUpRanges = {
 } as const
 
 Web3Function.onRun(async (context: Web3FunctionContext) => {
-    const { multiChainProvider, gelatoArgs } = context
+    const { multiChainProvider, gelatoArgs, userArgs, secrets } = context
     const providers = {
         mainnet: multiChainProvider.chainId(1),
         base: multiChainProvider.chainId(8453),
     }
 
     const keepersChainId = gelatoArgs.chainId
+    const sendSlackMessages = userArgs.sendSlackMessages as boolean
+
+    const slackWebhookUrl = (await secrets.get('SLACK_WEBHOOK_URL')) as string
 
     let keepersChainName
     if (keepersChainId === 1) {
@@ -88,10 +92,20 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
         }
     }
 
+    if (sendSlackMessages) {
+        const messageBits = nonFinalizedInitializations.map((initialization) => {
+            return `${initialization.txHash}\nSource domain:     ${initialization.sourceDomain}\nDestination domain: ${initialization.destinationDomain}`
+        })
+        const messageHeader = '🦾💸 CCTP Finalization Keeper 🦾💸\nFollowing transits to be finalized:\n\n'
+
+        const message = `\`\`\`${messageHeader}${messageBits.join('\n\n')}\`\`\``
+
+        await sendMessageToSlack(axios, slackWebhookUrl)(message)
+    }
+
     // TODO For each of the nonFinalizedInitializations
     //      1. Fetch message and attestation from CCTP API
-    //      2. Add to a combined slack message
-    //      3. Create a call to finalize the initialization for Gelato
+    //      2. Create a call to finalize the initialization for Gelato
 
     return {
         canExec: false,
