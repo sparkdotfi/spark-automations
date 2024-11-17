@@ -28,7 +28,7 @@ const w3fImplementationsPath = './web3-functions'
 const w3fConfigsPath = './scripts/configs'
 const abisPath = './abis'
 
-const domains = ['mainnet', 'gnosis']
+const domains = ['mainnet', 'gnosis', 'base']
 type Domain = (typeof domains)[number]
 
 const triggerTypeNames = ['block', 'cron', 'event', 'time']
