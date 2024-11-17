@@ -28,7 +28,7 @@ const w3fImplementationsPath = './web3-functions'
 const w3fConfigsPath = './scripts/configs'
 const abisPath = './abis'
 
-const domains = ['mainnet', 'gnosis']
+const domains = ['mainnet', 'gnosis', 'base']
 type Domain = (typeof domains)[number]
 
 const triggerTypeNames = ['block', 'cron', 'event', 'time']
@@ -135,6 +135,7 @@ const passwordPath = process.env.GELATO_PASSWORD_PATH as string
 const envPrivateKey = process.env.GELATO_PRIVATE_KEY as string
 const mainnetRpcUrl = process.env.MAINNET_RPC_URL as string
 const gnosisRpcUrl = process.env.GNOSIS_CHAIN_RPC_URL as string
+const baseRpcUrl = process.env.BASE_RPC_URL as string
 
 const deployerPrivateKey =
     envPrivateKey || (keystorePath && passwordPath && retrievePrivateKeyFromKeystore(keystorePath, passwordPath))
@@ -144,16 +145,19 @@ if (!deployerPrivateKey) throw new Error('Private key is not configured')
 const deployerWallets: Record<Domain, Wallet> = {
     mainnet: new Wallet(deployerPrivateKey, new providers.JsonRpcProvider(mainnetRpcUrl)),
     gnosis: new Wallet(deployerPrivateKey, new providers.JsonRpcProvider(gnosisRpcUrl)),
+    base: new Wallet(deployerPrivateKey, new providers.JsonRpcProvider(baseRpcUrl)),
 }
 
 const automationSDKs: Record<Domain, AutomateSDK> = {
     mainnet: new AutomateSDK(1, deployerWallets.mainnet),
     gnosis: new AutomateSDK(100, deployerWallets.gnosis),
+    base: new AutomateSDK(8453, deployerWallets.base),
 }
 
 const managementSDKs: Record<Domain, Web3Function> = {
     mainnet: new Web3Function(1, deployerWallets.mainnet),
     gnosis: new Web3Function(100, deployerWallets.gnosis),
+    base: new Web3Function(8453, deployerWallets.base),
 }
 
 const prompter = readline.createInterface({
