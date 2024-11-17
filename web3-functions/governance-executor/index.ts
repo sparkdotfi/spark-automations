@@ -2,26 +2,32 @@ import { Contract } from '@ethersproject/contracts'
 import { Web3Function, Web3FunctionContext } from '@gelatonetwork/web3-functions-sdk'
 import axios from 'axios'
 
-import { multicallAbi, remoteExecutorAbi } from '../../abis'
+import { baseGovernanceExecutorAbi, gnosisGovernanceExecutorAbi, multicallAbi } from '../../abis'
 import { addresses, sendMessageToSlack } from '../../utils'
 
-const foreignDomainAliases = ['gnosis'] as const
+const foreignDomainAliases = ['gnosis', 'base'] as const
 type ForeignDomainAlias = (typeof foreignDomainAliases)[number]
 
 Web3Function.onRun(async (context: Web3FunctionContext) => {
     const { multiChainProvider, userArgs, secrets } = context
+
+    let remoteExecutorAbi
+    if (userArgs.domain === 'gnosis') {
+        remoteExecutorAbi = gnosisGovernanceExecutorAbi
+    } else if (userArgs.domain === 'base') {
+        remoteExecutorAbi = baseGovernanceExecutorAbi
+    } else {
+        return {
+            canExec: false,
+            message: `Invalid domain: ${userArgs.domain}`,
+        }
+    }
 
     const domain = userArgs.domain as ForeignDomainAlias
     const sendSlackMessages = userArgs.sendSlackMessages as boolean
 
     const slackWebhookUrl = (await secrets.get('SLACK_WEBHOOK_URL')) as string
 
-    if (foreignDomainAliases.indexOf(domain) === -1) {
-        return {
-            canExec: false,
-            message: `Invalid domain: ${domain}`,
-        }
-    }
     const executorAddress = addresses[domain].executor
     const multicallAddress = addresses[domain].multicall
 
@@ -30,7 +36,13 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
     const executor = new Contract(executorAddress, remoteExecutorAbi, provider)
     const multicall = new Contract(multicallAddress, multicallAbi, provider)
 
-    const actionSetCount = BigInt(await executor.getActionsSetCount())
+    let actionSetCount = 0
+    if (domain === 'gnosis') {
+        actionSetCount = Number(await executor.getActionsSetCount())
+    }
+    if (domain === 'base') {
+        actionSetCount = Number(await executor.actionsSetCount())
+    }
 
     const latestBlockTimestamp = (await provider.getBlock('latest')).timestamp
 
