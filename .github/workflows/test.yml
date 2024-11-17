@@ -39,5 +39,8 @@ jobs:
       - name: Run gnosis tests
         run: yarn test:gnosis
 
+      - name: Run base tests
+        run: yarn test:base
+
       - name: Run mainnet tests
         run: yarn test:mainnet
