@@ -62,6 +62,7 @@ Alternatively, in order to run only part of the tests, run on of the following:
 ```bash
 yarn test:mainnet # Tests on mainnet fork for keepers operating on mainnet
 yarn test:gnosis # Tests on gnosis chain fork for keepers operating on gnosis chain
+yarn test:base # Tests on base chain fork for keepers operating on base chain
 yarn test:utils # Tests of utils, not executed on forked environment
 ```
 
