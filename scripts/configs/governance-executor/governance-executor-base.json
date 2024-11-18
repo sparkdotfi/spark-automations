@@ -9,6 +9,6 @@
     },
     "trigger": {
         "type": "time",
-        "interval": "3600000"
+        "interval": "60000"
     }
 }
