@@ -20,5 +20,5 @@ export const gasAboveAverage =
 
         const averageGasPrice = BigInt(result[0].avgGasPrice_Wei)
 
-        return currentGasPrice > averageGasPrice
+        return currentGasPrice > averageGasPrice * BigInt(5)
     }
