@@ -32,19 +32,19 @@ describe('gasAboveAverage', function () {
     })
 
     it('gas price is above average', async () => {
-        const currentGasPrice = BigInt(20) * gwei + BigInt(1)
+        const currentGasPrice = BigInt(20) * gwei * BigInt(5) + BigInt(1)
         const result = await gasAboveAverage(axios, 'fakeApiKey', currentGasPrice)()
         expect(result).to.be.true
     })
 
     it('gas price is equal to average', async () => {
-        const currentGasPrice = BigInt(20) * gwei
+        const currentGasPrice = BigInt(20) * gwei * BigInt(5)
         const result = await gasAboveAverage(axios, 'fakeApiKey', currentGasPrice)()
         expect(result).to.be.false
     })
 
     it('gas price is below average', async () => {
-        const currentGasPrice = BigInt(20) * gwei - BigInt(1)
+        const currentGasPrice = BigInt(20) * gwei * BigInt(5) - BigInt(1)
         const result = await gasAboveAverage(axios, 'fakeApiKey', currentGasPrice)()
         expect(result).to.be.false
     })
